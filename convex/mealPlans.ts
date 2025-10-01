@@ -225,3 +225,40 @@ export const deleteMeal = mutation({
     return args.mealId;
   },
 });
+
+export const deleteMealPlan = mutation({
+  args: {
+    planId: v.id("mealPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    // IMPORTANT: Delete meals FIRST, then the plan
+    const meals = await ctx.db
+      .query("meals")
+      .withIndex("by_plan", (q) => q.eq("planId", args.planId))
+      .collect();
+
+    console.log(`Deleting ${meals.length} meals for plan ${args.planId}`);
+
+    // Delete all meals associated with this plan
+    for (const meal of meals) {
+      await ctx.db.delete(meal._id);
+    }
+
+    // Now delete the meal plan
+    await ctx.db.delete(args.planId);
+
+    console.log(`Deleted meal plan ${args.planId}`);
+
+    return { planId: args.planId, deletedMeals: meals.length };
+  },
+});

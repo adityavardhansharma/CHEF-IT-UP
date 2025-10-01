@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format, parseISO } from "date-fns";
-import { Calendar, Check, RefreshCw, ChefHat, Clock, Utensils } from "lucide-react";
+import { Calendar, Check, RefreshCw, ChefHat, Clock, Utensils, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -27,6 +27,7 @@ export default function MealPlansPage() {
   const mealsForDate = useQuery(api.mealPlans.getMealsByDate, { date: selectedDate });
   const markAsConsumed = useMutation(api.mealPlans.markMealAsConsumed);
   const deleteMeal = useMutation(api.mealPlans.deleteMeal);
+  const deleteMealPlan = useMutation(api.mealPlans.deleteMealPlan);
   const addMealToPlan = useMutation(api.mealPlans.addMealToPlan);
   const pantryItems = useQuery(api.pantry.getUserPantry);
   const profile = useQuery(api.users.getUserProfile);
@@ -57,6 +58,33 @@ export default function MealPlansPage() {
       toast({
         title: "Error",
         description: "Failed to mark meal as consumed",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteMealPlan = async (planId: Id<"mealPlans">) => {
+    if (!confirm("Are you sure you want to delete this entire meal plan? This will remove all associated meals.")) {
+      return;
+    }
+
+    try {
+      const result = await deleteMealPlan({ planId });
+      
+      toast({
+        title: "Meal plan deleted!",
+        description: `Removed meal plan and ${result.deletedMeals} meals`,
+      });
+
+      // Redirect to create new meal plan page after short delay
+      setTimeout(() => {
+        window.location.href = "/dashboard/meal-plans/new";
+      }, 1500);
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete meal plan",
         variant: "destructive",
       });
     }
@@ -108,9 +136,20 @@ export default function MealPlansPage() {
           <p className="text-gray-600">View and manage your meal plans</p>
         </div>
         {activePlan && (
-          <Badge className="text-lg px-4 py-2">
-            Active: {activePlan.duration} {activePlan.durationUnit}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge className="text-lg px-4 py-2">
+              Active: {activePlan.duration} {activePlan.durationUnit}
+            </Badge>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDeleteMealPlan(activePlan._id)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Meal Plan
+            </Button>
+          </div>
         )}
       </div>
 
@@ -247,7 +286,7 @@ export default function MealPlansPage() {
 
                 <div>
                   <h4 className="font-semibold mb-2">Nutritional Information</h4>
-                  <p className="text-xs text-gray-500 mb-2">{APP_BRANDING.nutritionData.tagline}</p>
+                  <p className="text-xs text-gray-500 mb-2">{APP_BRANDING.nutritionData.tagline} • Per serving (1 person)</p>
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-gray-500">Protein</p>
@@ -266,6 +305,11 @@ export default function MealPlansPage() {
                       <p className="font-semibold">{meal.nutritionalInfo?.fiber || 0}g</p>
                     </div>
                   </div>
+                  {meal.portionSize && meal.portionSize > 1 && (
+                    <p className="text-xs text-blue-600 mt-2">
+                      👥 Recipe serves {meal.portionSize} people • Ingredient quantities are for total servings
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-2 pt-4 border-t">

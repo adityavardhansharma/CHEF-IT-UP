@@ -149,12 +149,13 @@ IMPORTANT INSTRUCTIONS:
 1. Create balanced, nutritious meals appropriate for the medical conditions listed
 2. PRIORITIZE using available pantry ingredients
 3. Respect all allergies and avoid blacklisted ingredients completely
-4. Calculate portions for ${parameters.familySize} people
-5. Provide accurate nutritional information per portion
-6. ${parameters.assumeBasicStaples !== false ? "You may use basic staples (salt, pepper, oil, butter, sugar, flour, etc.) without listing them in pantry" : "All ingredients must be explicitly listed in the pantry"}
-7. Include detailed cooking instructions and required utensils
-8. Vary recipes to prevent repetition across days
-9. For each meal include: recipe name, description, ingredients with quantities, step-by-step instructions, cooking time, difficulty, utensils needed, and nutritional info (calories, protein, carbs, fat, fiber, sodium)
+4. For ${totalDays} days, generate ONE meal per meal type per day (e.g., ONE breakfast for Day 1, ONE lunch for Day 1, etc.)
+5. Ingredient quantities should be TOTAL amounts for ${parameters.familySize} people (e.g., if 1 person needs 200g chicken, then for 2 people use 400g)
+6. Nutritional information MUST be PER SERVING (for ONE person), not total
+7. ${parameters.assumeBasicStaples !== false ? "You may use basic staples (salt, pepper, oil, butter, sugar, flour, etc.) without listing them in pantry" : "All ingredients must be explicitly listed in the pantry"}
+8. Include detailed cooking instructions and required utensils
+9. Vary recipes to prevent repetition across days
+10. For each meal include: recipe name, description, ingredients with quantities (for ${parameters.familySize} people total), step-by-step instructions, cooking time, difficulty, utensils needed, and nutritional info (PER PERSON)
 
 OUTPUT FORMAT:
 Return a valid JSON object with this exact structure:
@@ -193,6 +194,12 @@ CRITICAL FORMATTING RULES:
 - CORRECT: {"name": "Olive oil", "quantity": 2, "unit": "tbsp"}
 - WRONG: {"name": "Olive oil", "quantity": 2, "tbsp": "tbsp"}
 - WRONG: {"name": "Olive oil", "quantity": 2, "cups": "cups"}
+
+CRITICAL QUANTITY & NUTRITION RULES:
+- Ingredient quantities = TOTAL for ${parameters.familySize} people (e.g., for 3 people and 200g per person = 600g total)
+- Nutritional info (calories, protein, etc.) = PER SERVING (for ONE person)
+- portionSize field = ${parameters.familySize} (number of people)
+- Generate ONE meal per meal type per day, NOT multiple meals per meal type
 
 Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
 
