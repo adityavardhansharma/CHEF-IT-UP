@@ -125,6 +125,7 @@ export default function NewMealPlanPage() {
 
       // Generate AI meal plan using Convex action (server-side)
       const aiMealPlan = await generateMealPlanAction({
+        startDate,
         userProfile: {
           name: profile?.userId ? "User" : "Guest",
           allergies: profile?.allergies || [],
@@ -150,7 +151,18 @@ export default function NewMealPlanPage() {
 
       // Save meals to database
       if (aiMealPlan?.meals) {
+        // EXTRA SAFETY: Deduplicate again before saving
+        const savedKeys = new Set<string>();
+        let savedCount = 0;
+        
         for (const meal of aiMealPlan.meals) {
+          const key = `${meal.day}-${meal.mealType}`;
+          
+          if (savedKeys.has(key)) {
+            console.warn(`[Client] Skipping duplicate meal: Day ${meal.day}, ${meal.mealType}`);
+            continue; // Skip this duplicate
+          }
+          
           await addMealToPlan({
             planId,
             date: meal.date,
@@ -162,7 +174,12 @@ export default function NewMealPlanPage() {
             nutritionalInfo: meal.nutritionalInfo,
             portionSize: parseInt(familySize),
           });
+          
+          savedKeys.add(key);
+          savedCount++;
         }
+        
+        console.log(`[Client] Saved ${savedCount} unique meals to database`);
       }
 
       toast({

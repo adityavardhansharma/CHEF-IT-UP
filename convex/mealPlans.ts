@@ -1,6 +1,91 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function convertToGrams(quantity: number, unit: string): number {
+  const normalizedUnit = unit.toLowerCase().trim();
+  switch (normalizedUnit) {
+    case 'kg':
+    case 'kilogram':
+    case 'kilograms':
+      return quantity * 1000;
+    case 'g':
+    case 'gram':
+    case 'grams':
+      return quantity;
+    case 'lb':
+    case 'pound':
+    case 'pounds':
+      return quantity * 453.592;
+    case 'oz':
+    case 'ounce':
+    case 'ounces':
+      return quantity * 28.3495;
+    case 'ml':
+    case 'milliliter':
+    case 'milliliters':
+    case 'l':
+    case 'liter':
+    case 'liters':
+      return quantity; // Assume 1:1 for volume to weight approximation
+    case 'tsp':
+    case 'teaspoon':
+    case 'teaspoons':
+      return quantity * 5;
+    case 'tbsp':
+    case 'tablespoon':
+    case 'tablespoons':
+      return quantity * 15;
+    case 'cup':
+    case 'cups':
+      return quantity * 240;
+    default:
+      console.warn(`Unknown unit '${unit}', assuming 1:1 with grams`);
+      return quantity;
+  }
+}
+
+function convertFromGrams(grams: number, unit: string): number {
+  const normalizedUnit = unit.toLowerCase().trim();
+  switch (normalizedUnit) {
+    case 'kg':
+    case 'kilogram':
+    case 'kilograms':
+      return grams / 1000;
+    case 'g':
+    case 'gram':
+    case 'grams':
+      return grams;
+    case 'lb':
+    case 'pound':
+    case 'pounds':
+      return grams / 453.592;
+    case 'oz':
+    case 'ounce':
+    case 'ounces':
+      return grams / 28.3495;
+    case 'ml':
+    case 'milliliter':
+    case 'milliliters':
+    case 'l':
+    case 'liter':
+    case 'liters':
+      return grams; // Approximation
+    case 'tsp':
+    case 'teaspoon':
+    case 'teaspoons':
+      return grams / 5;
+    case 'tbsp':
+    case 'tablespoon':
+    case 'tablespoons':
+      return grams / 15;
+    case 'cup':
+    case 'cups':
+      return grams / 240;
+    default:
+      return grams; // Fallback to grams
+  }
+}
+
 export const createMealPlan = mutation({
   args: {
     startDate: v.string(),
@@ -52,7 +137,7 @@ export const addMealToPlan = mutation({
       ingredients: v.array(
         v.object({
           name: v.string(),
-          quantity: v.number(),
+          quantity: v.float64(),
           unit: v.string(),
         })
       ),
@@ -62,12 +147,12 @@ export const addMealToPlan = mutation({
       utensils: v.array(v.string()),
     }),
     nutritionalInfo: v.object({
-      calories: v.number(),
-      protein: v.number(),
-      carbs: v.number(),
-      fat: v.number(),
-      fiber: v.optional(v.number()),
-      sodium: v.optional(v.number()),
+      calories: v.float64(),
+      protein: v.float64(),
+      carbs: v.float64(),
+      fat: v.float64(),
+      fiber: v.optional(v.float64()),
+      sodium: v.optional(v.float64()),
     }),
     portionSize: v.number(),
   },
@@ -81,6 +166,28 @@ export const addMealToPlan = mutation({
       .unique();
 
     if (!user) throw new Error("User not found");
+
+    // Guard: prevent duplicate (planId, day, mealType)
+    const existing = await ctx.db
+      .query("meals")
+      .withIndex("by_plan_day_type", (q) =>
+        q.eq("planId", args.planId).eq("day", args.day).eq("mealType", args.mealType)
+      )
+      .unique();
+
+    if (existing) {
+      // Upsert policy: replace older with new recipe
+      await ctx.db.patch(existing._id, {
+        date: args.date,
+        recipeName: args.recipeName,
+        recipeDescription: args.recipeDescription,
+        recipeData: args.recipeData,
+        nutritionalInfo: args.nutritionalInfo,
+        portionSize: args.portionSize,
+        consumed: false,
+      });
+      return existing._id;
+    }
 
     const mealId = await ctx.db.insert("meals", {
       planId: args.planId,
@@ -136,6 +243,7 @@ export const getMealsByPlan = query({
 export const getMealsByDate = query({
   args: {
     date: v.string(),
+    planId: v.optional(v.id("mealPlans")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -148,11 +256,18 @@ export const getMealsByDate = query({
 
     if (!user) return [];
 
+    if (args.planId) {
+      // Prefer plan-scoped query for the date
+      const planId = args.planId; // narrow to defined within this block
+      return await ctx.db
+        .query("meals")
+        .withIndex("by_plan_and_date", (q) => q.eq("planId", planId).eq("date", args.date))
+        .collect();
+    }
+
     return await ctx.db
       .query("meals")
-      .withIndex("by_user_and_date", (q) =>
-        q.eq("userId", user._id).eq("date", args.date)
-      )
+      .withIndex("by_user_and_date", (q) => q.eq("userId", user._id).eq("date", args.date))
       .collect();
   },
 });
@@ -173,7 +288,7 @@ export const markMealAsConsumed = mutation({
       consumedAt: Date.now(),
     });
 
-    // Deduct ingredients from pantry
+    // Deduct ingredients from pantry with unit conversion
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
@@ -187,25 +302,54 @@ export const markMealAsConsumed = mutation({
       .collect();
 
     for (const ingredient of meal.recipeData.ingredients) {
-      const pantryItem = pantryItems.find((item) => {
-        if (item.itemId) {
-          return ctx.db.get(item.itemId).then((globalItem) => {
-            return globalItem?.name.toLowerCase() === ingredient.name.toLowerCase();
-          });
+      // Find matching pantry item
+      let matchingItem = null;
+      
+      for (const item of pantryItems) {
+        let itemName = "";
+        
+        if (item.customItemName) {
+          itemName = item.customItemName.toLowerCase();
+        } else if (item.itemId) {
+          const globalItem = await ctx.db.get(item.itemId);
+          if (globalItem) {
+            itemName = globalItem.name.toLowerCase();
+          }
         }
-        return item.customItemName?.toLowerCase() === ingredient.name.toLowerCase();
-      });
+        
+        if (itemName.includes(ingredient.name.toLowerCase()) || ingredient.name.toLowerCase().includes(itemName)) {
+          matchingItem = item;
+          break;
+        }
+      }
 
-      if (pantryItem) {
-        const newQuantity = pantryItem.quantity - ingredient.quantity;
-        if (newQuantity > 0) {
-          await ctx.db.patch(pantryItem._id, {
+      if (matchingItem && matchingItem.unit && ingredient.unit) {
+        // Convert both to grams
+        const pantryGrams = convertToGrams(matchingItem.quantity, matchingItem.unit);
+        const ingredientGrams = convertToGrams(ingredient.quantity, ingredient.unit);
+        
+        const newGrams = pantryGrams - ingredientGrams;
+        
+        if (newGrams > 0) {
+          // Convert back to pantry unit
+          const newQuantity = convertFromGrams(newGrams, matchingItem.unit);
+          await ctx.db.patch(matchingItem._id, {
             quantity: newQuantity,
             updatedAt: Date.now(),
           });
         } else {
-          await ctx.db.delete(pantryItem._id);
+          // Safe delete
+          const stillExists = await ctx.db.get(matchingItem._id);
+          if (stillExists) {
+            try {
+              await ctx.db.delete(matchingItem._id);
+            } catch (deleteError) {
+              console.warn(`Failed to delete pantry item ${matchingItem._id}:`, deleteError);
+            }
+          }
         }
+      } else if (matchingItem) {
+        console.warn(`Unit mismatch for ${ingredient.name}: pantry=${matchingItem.unit}, ingredient=${ingredient.unit}. Skipping deduction.`);
       }
     }
 

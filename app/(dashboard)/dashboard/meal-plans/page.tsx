@@ -24,7 +24,15 @@ export default function MealPlansPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const mealPlans = useQuery(api.mealPlans.getUserMealPlans);
-  const mealsForDate = useQuery(api.mealPlans.getMealsByDate, { date: selectedDate });
+  
+  // Move this up before mealsForDate
+  const activePlan = mealPlans?.find((plan) => plan.status === "active");
+
+  const mealsForDate = useQuery(
+    api.mealPlans.getMealsByDate,
+    activePlan ? { date: selectedDate, planId: activePlan._id } : { date: selectedDate }
+  );
+  
   const markAsConsumed = useMutation(api.mealPlans.markMealAsConsumed);
   const deleteMeal = useMutation(api.mealPlans.deleteMeal);
   const deleteMealPlan = useMutation(api.mealPlans.deleteMealPlan);
@@ -33,8 +41,6 @@ export default function MealPlansPage() {
   const profile = useQuery(api.users.getUserProfile);
 
   const { toast } = useToast();
-
-  const activePlan = mealPlans?.find((plan) => plan.status === "active");
 
   // Check if ingredient is in pantry
   const getIngredientStatus = (ingredientName: string) => {

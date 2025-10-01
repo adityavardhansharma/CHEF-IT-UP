@@ -25,10 +25,10 @@ export default defineSchema({
     name: v.string(),
     category: v.string(),
     nutritionalInfo: v.object({
-      calories: v.number(),
-      protein: v.number(),
-      carbs: v.number(),
-      fat: v.number(),
+      calories: v.float64(),
+      protein: v.float64(),
+      carbs: v.float64(),
+      fat: v.float64(),
     }),
   })
     .index("by_category", ["category"])
@@ -41,7 +41,7 @@ export default defineSchema({
     userId: v.id("users"),
     itemId: v.optional(v.id("globalPantryItems")),
     customItemName: v.optional(v.string()), // For custom items
-    quantity: v.number(),
+    quantity: v.float64(),
     unit: v.string(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
@@ -97,6 +97,8 @@ export default defineSchema({
     consumedAt: v.optional(v.number()),
   })
     .index("by_plan", ["planId"])
+    .index("by_plan_and_date", ["planId", "date"]) 
+    .index("by_plan_day_type", ["planId", "day", "mealType"]) 
     .index("by_user", ["userId"])
     .index("by_user_and_date", ["userId", "date"]),
 

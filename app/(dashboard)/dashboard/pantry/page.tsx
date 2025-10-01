@@ -434,9 +434,14 @@ export default function PantryPage() {
                       className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
                     >
                       <div className="flex-1">
-                        <h3 className="font-semibold">{item.name}</h3>
+                        <h3 className="font-semibold">{item.name || item.customItemName}</h3>
                         <p className="text-sm text-gray-600">
-                          {item.quantity} {item.unit}
+                          {(() => {
+                            const q = item.quantity;
+                            const u = item.unit.toLowerCase();
+                            const isPreciseUnit = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'tsp', 'tbsp', 'cup'].includes(u);
+                            return isPreciseUnit ? Number(q).toFixed(3) : q;
+                          })()} {item.unit}
                         </p>
                         {item.nutritionalInfo && (
                           <p className="text-xs text-gray-500">

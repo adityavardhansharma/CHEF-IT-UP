@@ -150,101 +150,29 @@ export async function generateMealPlan(
   pantryItems: PantryItem[],
   parameters: MealPlanParameters
 ) {
-  const totalDays =
-    parameters.durationUnit === "weeks"
-      ? parameters.duration * 7
-      : parameters.duration;
+  const totalDays = parameters.durationUnit === "weeks" ? parameters.duration * 7 : parameters.duration;
+  const totalMeals = totalDays * parameters.mealsPerDay.length;
+  const mealTypesList = parameters.mealsPerDay.join(", ");
 
-  const prompt = `You are an expert AI chef and nutritionist. Generate a personalized ${totalDays}-day meal plan.
+  const prompt = `Create ${totalMeals} recipes for ${totalDays} days.
 
-USER PROFILE:
-- Name: ${userProfile.name || "User"}
-- Family Size: ${parameters.familySize} people
-- Allergies: ${userProfile.allergies.map((a) => `${a.name} (${a.severity})`).join(", ") || "None"}
-- Medical Conditions: ${userProfile.medicalConditions.join(", ") || "None"}
-- Favorite Ingredients: ${userProfile.favoriteIngredients.join(", ") || "None specified"}
+DETAILS: ${parameters.familySize} people. Diet: ${parameters.dietType}. Avoid: ${parameters.negativeIngredients.join(", ") || "none"}. Allergies: ${userProfile.allergies.map(a => a.name).join(", ") || "none"}.
+Pantry (use these): ${pantryItems.slice(0, 10).map(i => `${i.name} (${i.quantity}${i.unit})`).join("; ")}${pantryItems.length > 10 ? "; +more" : ""}.
 
-AVAILABLE PANTRY ITEMS:
-${pantryItems.map((item) => `- ${item.name}: ${item.quantity} ${item.unit}`).join("\n")}
-${parameters.assumeBasicStaples !== false ? "\nNOTE: Assume basic kitchen staples are always available (salt, pepper, oil, butter, sugar, flour, etc.)" : ""}
+STRUCTURE - Generate ONE recipe per slot:
+- Day 1 breakfast, Day 1 lunch, Day 1 dinner
+- Day 2 breakfast, Day 2 lunch, Day 2 dinner
+- Day 3 breakfast, Day 3 lunch, Day 3 dinner
+- ... repeat pattern for ALL ${totalDays} days (total ${totalMeals} recipes)
 
-MEAL PLAN REQUIREMENTS:
-- Duration: ${totalDays} days
-- Meals per day: ${parameters.mealsPerDay.join(", ")}
-- Diet Type: ${parameters.dietType}
-- Cuisine Preference: ${parameters.cuisinePreference || "Any"}
-- Ingredients to AVOID: ${parameters.negativeIngredients.join(", ") || "None"}
-- Basic Staples: ${parameters.assumeBasicStaples !== false ? "Assumed available" : "Must be in pantry"}
+Rules:
+- Quantities: total for ${parameters.familySize} people
+- Nutrition: per person
+- Ingredients format: {"name":"oil","quantity":2,"unit":"tbsp"}
+- Vary recipes, use pantry items
 
-IMPORTANT INSTRUCTIONS:
-1. Create balanced, nutritious meals appropriate for the medical conditions listed
-2. PRIORITIZE using available pantry ingredients
-3. Respect all allergies and avoid blacklisted ingredients completely
-4. YOU MUST GENERATE EXACTLY ${totalDays * parameters.mealsPerDay.length} MEALS TOTAL
-   - For ${totalDays} days × ${parameters.mealsPerDay.length} meal types = ${totalDays * parameters.mealsPerDay.length} meals
-   - Example for 3 people: Day 1 gets ONE breakfast recipe (serves 3), ONE lunch recipe (serves 3), ONE dinner recipe (serves 3)
-   - DO NOT create multiple versions of the same meal type for the same day
-   - Each meal is a SHARED recipe that serves ${parameters.familySize} people
-5. Ingredient quantities should be TOTAL amounts for ${parameters.familySize} people (e.g., if 1 person needs 200g chicken, then for 2 people use 400g)
-6. Nutritional information MUST be PER SERVING (for ONE person), not total
-7. ${parameters.assumeBasicStaples !== false ? "You may use basic staples (salt, pepper, oil, butter, sugar, flour, etc.) without listing them in pantry" : "All ingredients must be explicitly listed in the pantry"}
-8. Include detailed cooking instructions and required utensils
-9. Vary recipes to prevent repetition across days
-10. For each meal include: recipe name, description, ingredients with quantities (for ${parameters.familySize} people total), step-by-step instructions, cooking time, difficulty, utensils needed, and nutritional info (PER PERSON)
-
-OUTPUT FORMAT:
-Return a valid JSON object with this exact structure:
-{
-  "meals": [
-    {
-      "day": 1,
-      "date": "YYYY-MM-DD",
-      "mealType": "breakfast/lunch/dinner/snacks/dessert",
-      "recipeName": "Recipe Name",
-      "recipeDescription": "Brief description",
-      "recipeData": {
-        "ingredients": [
-          {"name": "ingredient", "quantity": 0.0, "unit": "unit"}
-        ],
-        "instructions": ["Step 1", "Step 2"],
-        "cookingTime": 30,
-        "difficulty": "easy/medium/hard",
-        "utensils": ["pan", "spatula"]
-      },
-      "nutritionalInfo": {
-        "calories": 0,
-        "protein": 0,
-        "carbs": 0,
-        "fat": 0,
-        "fiber": 0,
-        "sodium": 0
-      },
-      "portionSize": ${parameters.familySize}
-    }
-  ]
-}
-
-CRITICAL FORMATTING RULES:
-- The ingredients array MUST use the field name "unit" (NOT the unit value as field name)
-- CORRECT: {"name": "Olive oil", "quantity": 2, "unit": "tbsp"}
-- WRONG: {"name": "Olive oil", "quantity": 2, "tbsp": "tbsp"}
-- WRONG: {"name": "Olive oil", "quantity": 2, "cups": "cups"}
-
-CRITICAL QUANTITY & NUTRITION RULES:
-- Ingredient quantities = TOTAL for ${parameters.familySize} people (e.g., for 3 people and 200g per person = 600g total)
-- Nutritional info (calories, protein, etc.) = PER SERVING (for ONE person)
-- portionSize field = ${parameters.familySize} (number of people)
-
-CRITICAL: EXACTLY ${totalDays * parameters.mealsPerDay.length} MEALS IN THE RESPONSE
-- Generate ONE SHARED recipe per meal type per day
-- Do NOT generate separate meals for each person
-- Example correct output for Day 1 with 3 people:
-  * Meal 1: {"day": 1, "mealType": "breakfast", "recipeName": "Scrambled Eggs", "portionSize": 3}
-  * Meal 2: {"day": 1, "mealType": "lunch", "recipeName": "Chicken Wrap", "portionSize": 3}
-  * Meal 3: {"day": 1, "mealType": "dinner", "recipeName": "Pasta", "portionSize": 3}
-- WRONG: Do NOT create breakfast #1, breakfast #2, breakfast #3 for the same day
-
-Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
+JSON only - ${totalMeals} meals in "meals" array:
+{"meals":[{"day":1,"date":"YYYY-MM-DD","mealType":"breakfast","recipeName":"Name","recipeDescription":"desc","recipeData":{"ingredients":[{"name":"item","quantity":1,"unit":"g"}],"instructions":["step1"],"cookingTime":30,"difficulty":"easy","utensils":["pan"]},"nutritionalInfo":{"calories":300,"protein":20,"carbs":40,"fat":10},"portionSize":${parameters.familySize}}]}`;
 
   try {
     const groqClient = getGroqClient();
@@ -252,8 +180,7 @@ Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert chef and nutritionist who creates personalized meal plans. You MUST respond with valid JSON only. Do NOT include any reasoning, thinking, or explanatory text. Output ONLY the JSON object.\n\nCRITICAL JSON RULES:\n1. In ingredients array, field MUST be named 'unit' (NOT 'tbsp', 'cups', 'g', etc.)\n2. Every meal MUST have a nutritionalInfo object with calories, protein, carbs, fat\n3. Every meal MUST have complete recipeData with: ingredients, instructions, cookingTime, difficulty, utensils\n4. Follow the exact field names provided in the template\n5. DO NOT skip any required fields",
+          content: `Generate EXACTLY ${totalMeals} meals for all ${totalDays} days. Do not truncate. Full JSON only. No explanations.`,
         },
         {
           role: "user",
@@ -262,7 +189,7 @@ Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
       ],
       model: "openai/gpt-oss-120b",
       temperature: 0.7,
-      max_tokens: 8000,
+      max_tokens: 16000,
       response_format: { type: "json_object" },
     });
 
@@ -271,28 +198,65 @@ Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
       throw new Error("No response from AI");
     }
 
-    // Clean any reasoning traces from the response
     const cleanedContent = cleanAIResponse(content);
-    
     const mealPlan = JSON.parse(cleanedContent);
     
-    // Fix any structural issues in meals
     if (mealPlan.meals) {
       mealPlan.meals = mealPlan.meals.map(fixMealStructure);
       
-      // CRITICAL FIX: Remove duplicate meals (ensure only ONE meal per day per meal type)
       const seenCombinations = new Map<string, any>();
-      mealPlan.meals = mealPlan.meals.filter((meal: any) => {
-        const key = `${meal.day}-${meal.mealType}`;
-        if (seenCombinations.has(key)) {
-          console.warn(`Duplicate meal found for ${key}, removing duplicate`);
-          return false; // Skip this duplicate
-        }
-        seenCombinations.set(key, meal);
-        return true; // Keep the first occurrence
-      });
+      const uniqueMeals: any[] = [];
       
-      console.log(`Generated ${mealPlan.meals.length} unique meals (expected: ${totalDays * parameters.mealsPerDay.length})`);
+      for (const meal of mealPlan.meals) {
+        const key = `${meal.day}-${meal.mealType}`;
+        if (!seenCombinations.has(key)) {
+          seenCombinations.set(key, meal);
+          uniqueMeals.push(meal);
+        } else {
+          console.warn(`Duplicate meal found for ${key}, removing duplicate`);
+        }
+      }
+      
+      const mealsPerDay = parameters.mealsPerDay.length;
+      const expectedMeals = totalDays * mealsPerDay;
+      
+      const daysMissing: number[] = [];
+      for (let day = 1; day <= totalDays; day++) {
+        const mealsForDay = uniqueMeals.filter(m => m.day === day).length;
+        if (mealsForDay < mealsPerDay) {
+          daysMissing.push(day);
+          console.warn(`Day ${day} is missing meals (has ${mealsForDay}, needs ${mealsPerDay})`);
+        }
+      }
+      
+      if (daysMissing.length > 0) {
+        console.warn(`Redistributing meals to cover all ${totalDays} days`);
+        
+        const organizedMeals: any[] = [];
+        let mealIndex = 0;
+        
+        for (let day = 1; day <= totalDays; day++) {
+          for (const mealType of parameters.mealsPerDay) {
+            if (mealIndex < uniqueMeals.length) {
+              const meal = { ...uniqueMeals[mealIndex] };
+              meal.day = day;
+              meal.mealType = mealType;
+              const startDate = new Date(parameters.mealsPerDay[0] === 'breakfast' ? Date.now() : Date.now());
+              startDate.setDate(startDate.getDate() + (day - 1));
+              meal.date = startDate.toISOString().split('T')[0];
+              organizedMeals.push(meal);
+              mealIndex++;
+            }
+          }
+        }
+        
+        mealPlan.meals = organizedMeals;
+        console.log(`Redistributed ${organizedMeals.length} meals across ${totalDays} days`);
+      } else {
+        mealPlan.meals = uniqueMeals;
+      }
+      
+      console.log(`Generated ${mealPlan.meals.length} unique meals (expected: ${expectedMeals})`);
     }
     
     return mealPlan;
@@ -369,7 +333,7 @@ Return ONLY valid JSON, no other text.`;
       ],
       model: "openai/gpt-oss-120b",
       temperature: customRequest ? 0.7 : 0.9,
-      max_tokens: 2000,
+      max_tokens: 8000,
       response_format: { type: "json_object" },
     });
 
