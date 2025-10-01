@@ -180,7 +180,11 @@ IMPORTANT INSTRUCTIONS:
 1. Create balanced, nutritious meals appropriate for the medical conditions listed
 2. PRIORITIZE using available pantry ingredients
 3. Respect all allergies and avoid blacklisted ingredients completely
-4. For ${totalDays} days, generate ONE meal per meal type per day (e.g., ONE breakfast for Day 1, ONE lunch for Day 1, etc.)
+4. YOU MUST GENERATE EXACTLY ${totalDays * parameters.mealsPerDay.length} MEALS TOTAL
+   - For ${totalDays} days × ${parameters.mealsPerDay.length} meal types = ${totalDays * parameters.mealsPerDay.length} meals
+   - Example for 3 people: Day 1 gets ONE breakfast recipe (serves 3), ONE lunch recipe (serves 3), ONE dinner recipe (serves 3)
+   - DO NOT create multiple versions of the same meal type for the same day
+   - Each meal is a SHARED recipe that serves ${parameters.familySize} people
 5. Ingredient quantities should be TOTAL amounts for ${parameters.familySize} people (e.g., if 1 person needs 200g chicken, then for 2 people use 400g)
 6. Nutritional information MUST be PER SERVING (for ONE person), not total
 7. ${parameters.assumeBasicStaples !== false ? "You may use basic staples (salt, pepper, oil, butter, sugar, flour, etc.) without listing them in pantry" : "All ingredients must be explicitly listed in the pantry"}
@@ -230,7 +234,15 @@ CRITICAL QUANTITY & NUTRITION RULES:
 - Ingredient quantities = TOTAL for ${parameters.familySize} people (e.g., for 3 people and 200g per person = 600g total)
 - Nutritional info (calories, protein, etc.) = PER SERVING (for ONE person)
 - portionSize field = ${parameters.familySize} (number of people)
-- Generate ONE meal per meal type per day, NOT multiple meals per meal type
+
+CRITICAL: EXACTLY ${totalDays * parameters.mealsPerDay.length} MEALS IN THE RESPONSE
+- Generate ONE SHARED recipe per meal type per day
+- Do NOT generate separate meals for each person
+- Example correct output for Day 1 with 3 people:
+  * Meal 1: {"day": 1, "mealType": "breakfast", "recipeName": "Scrambled Eggs", "portionSize": 3}
+  * Meal 2: {"day": 1, "mealType": "lunch", "recipeName": "Chicken Wrap", "portionSize": 3}
+  * Meal 3: {"day": 1, "mealType": "dinner", "recipeName": "Pasta", "portionSize": 3}
+- WRONG: Do NOT create breakfast #1, breakfast #2, breakfast #3 for the same day
 
 Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
 
@@ -267,6 +279,20 @@ Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
     // Fix any structural issues in meals
     if (mealPlan.meals) {
       mealPlan.meals = mealPlan.meals.map(fixMealStructure);
+      
+      // CRITICAL FIX: Remove duplicate meals (ensure only ONE meal per day per meal type)
+      const seenCombinations = new Map<string, any>();
+      mealPlan.meals = mealPlan.meals.filter((meal: any) => {
+        const key = `${meal.day}-${meal.mealType}`;
+        if (seenCombinations.has(key)) {
+          console.warn(`Duplicate meal found for ${key}, removing duplicate`);
+          return false; // Skip this duplicate
+        }
+        seenCombinations.set(key, meal);
+        return true; // Keep the first occurrence
+      });
+      
+      console.log(`Generated ${mealPlan.meals.length} unique meals (expected: ${totalDays * parameters.mealsPerDay.length})`);
     }
     
     return mealPlan;
