@@ -43,8 +43,36 @@ export interface PantryItem {
  * Fixes common AI mistakes in the JSON structure
  */
 function fixMealStructure(meal: any): any {
+  // Ensure recipeData exists
+  if (!meal.recipeData) {
+    meal.recipeData = {
+      ingredients: [],
+      instructions: [],
+      cookingTime: 30,
+      difficulty: "medium",
+      utensils: [],
+    };
+  }
+
+  // Ensure all required recipeData fields exist
+  if (!meal.recipeData.cookingTime) {
+    meal.recipeData.cookingTime = 30;
+  }
+  if (!meal.recipeData.difficulty) {
+    meal.recipeData.difficulty = "medium";
+  }
+  if (!meal.recipeData.instructions) {
+    meal.recipeData.instructions = ["No instructions provided"];
+  }
+  if (!meal.recipeData.utensils) {
+    meal.recipeData.utensils = ["Basic kitchen utensils"];
+  }
+  if (!meal.recipeData.ingredients) {
+    meal.recipeData.ingredients = [];
+  }
+
   // Fix ingredients with wrong field names (e.g., "tbsp": "tbsp" should be "unit": "tbsp")
-  if (meal.recipeData?.ingredients) {
+  if (meal.recipeData.ingredients) {
     meal.recipeData.ingredients = meal.recipeData.ingredients.map((ing: any) => {
       // If 'unit' field is missing but there's another field, fix it
       if (!ing.unit) {
@@ -57,6 +85,9 @@ function fixMealStructure(meal: any): any {
         if (possibleUnitKey) {
           ing.unit = ing[possibleUnitKey];
           delete ing[possibleUnitKey];
+        } else {
+          // If no unit field and can't find one, default to "unit"
+          ing.unit = "unit";
         }
       }
       return ing;
@@ -210,7 +241,7 @@ Generate the complete meal plan now. Return ONLY valid JSON, no other text.`;
         {
           role: "system",
           content:
-            "You are an expert chef and nutritionist who creates personalized meal plans. You MUST respond with valid JSON only. Do NOT include any reasoning, thinking, or explanatory text. Output ONLY the JSON object.\n\nCRITICAL JSON RULES:\n1. In ingredients array, field MUST be named 'unit' (NOT 'tbsp', 'cups', 'g', etc.)\n2. Every meal MUST have a nutritionalInfo object with calories, protein, carbs, fat\n3. Follow the exact field names provided in the template",
+            "You are an expert chef and nutritionist who creates personalized meal plans. You MUST respond with valid JSON only. Do NOT include any reasoning, thinking, or explanatory text. Output ONLY the JSON object.\n\nCRITICAL JSON RULES:\n1. In ingredients array, field MUST be named 'unit' (NOT 'tbsp', 'cups', 'g', etc.)\n2. Every meal MUST have a nutritionalInfo object with calories, protein, carbs, fat\n3. Every meal MUST have complete recipeData with: ingredients, instructions, cookingTime, difficulty, utensils\n4. Follow the exact field names provided in the template\n5. DO NOT skip any required fields",
         },
         {
           role: "user",
