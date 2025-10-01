@@ -7,6 +7,7 @@ import { ChefHat, Home, ShoppingBasket, Calendar, User, Plus } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { UserSync } from "@/components/user-sync";
+import { PrefetchQueries } from "@/components/prefetch-queries";
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
       <UserSync />
+      <PrefetchQueries />
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">

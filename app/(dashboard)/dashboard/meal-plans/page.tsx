@@ -1,57 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { APP_BRANDING } from "@/lib/branding";
-import { IngredientItem } from "@/components/ingredient-item";
+import { MealCard } from "@/components/meal-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format, parseISO } from "date-fns";
-import { Calendar, Check, RefreshCw, ChefHat, Clock, Utensils, Trash2 } from "lucide-react";
+import { Calendar, Check, RefreshCw, ChefHat, Clock, Utensils, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function MealPlansPage() {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDayNumber, setSelectedDayNumber] = useState(1);
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [isRefreshDialogOpen, setIsRefreshDialogOpen] = useState(false);
   const [customRequest, setCustomRequest] = useState("");
   const [isRegenerating, setIsRegenerating] = useState(false);
 
-  const mealPlans = useQuery(api.mealPlans.getUserMealPlans);
-  
-  // Move this up before mealsForDate
+  const mealPlans = useQuery(api.mealPlans.getUserMealPlans) ?? [];
   const activePlan = mealPlans?.find((plan) => plan.status === "active");
+  const isLoadingPlans = mealPlans === undefined;
+
+  // Calculate date range for active plan
+  const totalDays = activePlan
+    ? activePlan.durationUnit === "weeks"
+      ? activePlan.duration * 7
+      : activePlan.duration
+    : 0;
+
+  const startDate = activePlan ? new Date(`${activePlan.startDate}T00:00:00.000Z`) : new Date();
+  const currentDate = new Date(startDate);
+  currentDate.setUTCDate(startDate.getUTCDate() + (selectedDayNumber - 1));
+  const selectedDate = format(currentDate, "yyyy-MM-dd");
 
   const mealsForDate = useQuery(
     api.mealPlans.getMealsByDate,
-    activePlan ? { date: selectedDate, planId: activePlan._id } : { date: selectedDate }
-  );
+    activePlan ? { date: selectedDate, planId: activePlan._id } : "skip"
+  ) ?? [];
+  const isLoadingMeals = mealsForDate === undefined;
   
   const markAsConsumed = useMutation(api.mealPlans.markMealAsConsumed);
   const deleteMeal = useMutation(api.mealPlans.deleteMeal);
   const deleteMealPlan = useMutation(api.mealPlans.deleteMealPlan);
   const addMealToPlan = useMutation(api.mealPlans.addMealToPlan);
-  const pantryItems = useQuery(api.pantry.getUserPantry);
+  
+  // Prefetched queries - instant from cache
+  const pantryItems = useQuery(api.pantry.getUserPantry) ?? [];
   const profile = useQuery(api.users.getUserProfile);
 
   const { toast } = useToast();
 
-  // Check if ingredient is in pantry
-  const getIngredientStatus = (ingredientName: string) => {
-    if (!pantryItems) return false;
-    
-    const normalizedIngredient = ingredientName.toLowerCase().trim();
-    return pantryItems.some(item => {
+  // Memoized ingredient check for performance
+  const getIngredientStatus = useMemo(() => {
+    // Build lookup map once
+    const pantryMap = new Map<string, boolean>();
+    pantryItems.forEach(item => {
       const itemName = (item.name || item.customItemName || "").toLowerCase().trim();
-      return itemName.includes(normalizedIngredient) || normalizedIngredient.includes(itemName);
+      pantryMap.set(itemName, true);
     });
-  };
+    
+    return (ingredientName: string) => {
+      const normalized = ingredientName.toLowerCase().trim();
+      // Fast map lookup
+      for (const [key] of pantryMap) {
+        if (key.includes(normalized) || normalized.includes(key)) {
+          return true;
+        }
+      }
+      return false;
+    };
+  }, [pantryItems]);
 
   const handleMarkAsConsumed = async (mealId: Id<"meals">) => {
     try {
@@ -159,30 +184,101 @@ export default function MealPlansPage() {
         )}
       </div>
 
-      {/* Date Picker */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Select Date
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="max-w-xs"
-          />
-        </CardContent>
-      </Card>
+      {/* Day Timeline Navigation */}
+      {activePlan && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center gap-3">
+              {/* Previous Button */}
+              <button
+                onClick={() => setSelectedDayNumber(Math.max(1, selectedDayNumber - 1))}
+                disabled={selectedDayNumber === 1}
+                className="flex-shrink-0 p-2 rounded-full bg-orange-100 hover:bg-orange-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Previous day"
+              >
+                <ChevronLeft className="h-5 w-5 text-orange-700" />
+              </button>
+
+              {/* Day Timeline - Hidden Scrollbar */}
+              <div 
+                className="flex-1 max-w-3xl overflow-x-hidden relative"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
+                <div 
+                  className="flex gap-2 justify-center"
+                  style={{
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                  }}
+                >
+                  {Array.from({ length: totalDays }, (_, i) => {
+                    const dayNum = i + 1;
+                    const isActive = selectedDayNumber === dayNum;
+                    const dayDate = new Date(startDate);
+                    dayDate.setUTCDate(startDate.getUTCDate() + i);
+                    
+                    return (
+                      <button
+                        key={dayNum}
+                        onClick={() => setSelectedDayNumber(dayNum)}
+                        className={`flex-shrink-0 px-4 py-3 rounded-lg font-medium transition-all ${
+                          isActive
+                            ? "bg-orange-600 text-white shadow-lg scale-105"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className={`text-xs ${isActive ? "text-orange-100" : "text-gray-500"}`}>
+                            {format(dayDate, "EEE")}
+                          </div>
+                          <div className="text-lg font-bold">
+                            {format(dayDate, "dd")}
+                          </div>
+                          <div className={`text-xs ${isActive ? "text-orange-100" : "text-gray-500"}`}>
+                            Day {dayNum}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => setSelectedDayNumber(Math.min(totalDays, selectedDayNumber + 1))}
+                disabled={selectedDayNumber === totalDays}
+                className="flex-shrink-0 p-2 rounded-full bg-orange-100 hover:bg-orange-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Next day"
+              >
+                <ChevronRight className="h-5 w-5 text-orange-700" />
+              </button>
+            </div>
+
+            {/* Current Selection Info */}
+            <div className="mt-4 text-center">
+              <p className="text-lg font-semibold text-gray-700">
+                {format(currentDate, "EEEE, MMMM dd, yyyy")}
+              </p>
+              <p className="text-sm text-gray-500">
+                Showing meals for day {selectedDayNumber} of {totalDays}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Calorie Summary */}
       {mealsForDate && mealsForDate.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Daily Nutrition</CardTitle>
-            <CardDescription>{format(parseISO(selectedDate), "MMMM dd, yyyy")}</CardDescription>
+            <CardDescription>
+              Day {selectedDayNumber} • {format(currentDate, "MMMM dd, yyyy")}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -205,152 +301,61 @@ export default function MealPlansPage() {
 
       {/* Meals */}
       <div className="space-y-4">
-        {mealsForDate && mealsForDate.length > 0 ? (
+        {isLoadingMeals ? (
+          // Loading skeleton
+          <>
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-3">
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-7 w-48" />
+                      <Skeleton className="h-4 w-full max-w-md" />
+                    </div>
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <Skeleton className="h-32 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : mealsForDate && mealsForDate.length > 0 ? (
           mealsForDate.map((meal) => (
-            <Card key={meal._id} className={meal.consumed ? "opacity-75" : ""}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="capitalize">
-                        {meal.mealType}
-                      </Badge>
-                      {meal.consumed && (
-                        <Badge variant="default" className="bg-green-600">
-                          <Check className="h-3 w-3 mr-1" />
-                          Completed
-                        </Badge>
-                      )}
-                    </div>
-                    <CardTitle className="text-2xl">{meal.recipeName}</CardTitle>
-                    {meal.recipeDescription && (
-                      <CardDescription className="mt-2">{meal.recipeDescription}</CardDescription>
-                    )}
-                  </div>
-                  <ChefHat className="h-8 w-8 text-orange-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>{meal.recipeData.cookingTime} min</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Utensils className="h-4 w-4 text-gray-500" />
-                    <span className="capitalize">{meal.recipeData.difficulty}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold">{meal.nutritionalInfo?.calories} kcal</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Ingredients:</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {meal.recipeData.ingredients.map((ing: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="text-gray-600">•</span>
-                        <IngredientItem
-                          name={ing.name}
-                          quantity={`${ing.quantity} ${ing.unit}`}
-                          isInPantry={getIngredientStatus(ing.name)}
-                          assumeStaples={activePlan?.parameters?.assumeBasicStaples ?? true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  {pantryItems && meal.recipeData.ingredients.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-3 italic">
-                      💡 Hover over <span className="border-b-2 border-red-500 border-dotted px-1">ingredients like this</span> to see what's missing from your pantry
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Instructions:</h4>
-                  <ol className="space-y-2 text-sm">
-                    {meal.recipeData.instructions.map((instruction: string, idx: number) => (
-                      <li key={idx} className="flex gap-2">
-                        <span className="font-semibold text-orange-600">{idx + 1}.</span>
-                        <span>{instruction}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Required Utensils:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {meal.recipeData.utensils.map((utensil: string, idx: number) => (
-                      <Badge key={idx} variant="outline">
-                        {utensil}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Nutritional Information</h4>
-                  <p className="text-xs text-gray-500 mb-2">{APP_BRANDING.nutritionData.tagline} • Per serving (1 person)</p>
-                  <div className="grid grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Protein</p>
-                      <p className="font-semibold">{meal.nutritionalInfo?.protein}g</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Carbs</p>
-                      <p className="font-semibold">{meal.nutritionalInfo?.carbs}g</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Fat</p>
-                      <p className="font-semibold">{meal.nutritionalInfo?.fat}g</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Fiber</p>
-                      <p className="font-semibold">{meal.nutritionalInfo?.fiber || 0}g</p>
-                    </div>
-                  </div>
-                  {meal.portionSize && meal.portionSize > 1 && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      👥 Recipe serves {meal.portionSize} people • Ingredient quantities are for total servings
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-4 border-t">
-                  {!meal.consumed && (
-                    <>
-                      <Button onClick={() => handleMarkAsConsumed(meal._id)} className="flex-1">
-                        <Check className="h-4 w-4 mr-2" />
-                        Mark as Eaten
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleRefreshMeal(meal, true)}
-                        disabled={isRegenerating}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedMeal(meal);
-                          setIsRefreshDialogOpen(true);
-                        }}
-                      >
-                        Custom Recipe
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <MealCard
+              key={meal._id}
+              meal={meal}
+              getIngredientStatus={getIngredientStatus}
+              assumeStaples={activePlan?.parameters?.assumeBasicStaples ?? true}
+              onMarkAsConsumed={() => handleMarkAsConsumed(meal._id)}
+              onRefresh={(surpriseMe) => handleRefreshMeal(meal, surpriseMe)}
+              onCustomRequest={() => {
+                setSelectedMeal(meal);
+                setIsRefreshDialogOpen(true);
+              }}
+              isRegenerating={isRegenerating}
+            />
           ))
+        ) : activePlan ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-gray-500 mb-4">No meals found for Day {selectedDayNumber}</p>
+              <p className="text-sm text-gray-400">
+                This day might not have meals generated yet.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-gray-500 mb-4">No meals planned for this date</p>
+              <p className="text-gray-500 mb-4">No active meal plan</p>
               <Button onClick={() => (window.location.href = "/dashboard/meal-plans/new")}>
                 Create Meal Plan
               </Button>

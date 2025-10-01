@@ -57,3 +57,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbar for day timeline */
+.overflow-x-hidden::-webkit-scrollbar {
+  display: none;
+}
+.overflow-x-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
