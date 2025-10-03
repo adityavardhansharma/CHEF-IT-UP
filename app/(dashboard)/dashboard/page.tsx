@@ -1,22 +1,50 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ChefHat, ShoppingBasket, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, parseISO, addDays, differenceInDays } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.getCurrentUser);
   const mealPlans = useQuery(api.mealPlans.getUserMealPlans);
   const pantryItems = useQuery(api.pantry.getUserPantry);
-  const todayMeals = useQuery(api.mealPlans.getMealsByDate, {
-    date: format(new Date(), "yyyy-MM-dd"),
-  });
-
+  const archivePlan = useMutation(api.mealPlans.archiveMealPlan);
+  const { toast } = useToast();
+  
   const activePlan = mealPlans?.find((plan) => plan.status === "active");
+  
+  // Check if active plan is expired and archive it
+  if (activePlan) {
+    const startDate = parseISO(activePlan.startDate);
+    const totalDays = activePlan.durationUnit === "weeks" 
+      ? activePlan.duration * 7 
+      : activePlan.duration;
+    const endDate = addDays(startDate, totalDays);
+    
+    if (Date.now() > endDate.getTime()) {
+      archivePlan({ planId: activePlan._id });
+      toast({
+        title: "Meal plan completed! 🎉",
+        description: "Your meal plan has ended. Create a new one to continue.",
+      });
+    }
+  }
+  
+  // Calculate today's meals based on active plan
+  const todayMeals = useQuery(
+    activePlan ? api.mealPlans.getMealsByDate : "skip",
+    activePlan ? { 
+      date: format(new Date(), "yyyy-MM-dd"), 
+      planId: activePlan._id 
+    } : "skip"
+  ) ?? [];
+  
   const todayCalories =
     todayMeals?.reduce((sum, meal) => sum + (meal.nutritionalInfo?.calories || 0), 0) || 0;
   const todayConsumedCalories =
@@ -53,7 +81,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {activePlan
-                ? `Started ${format(new Date(activePlan.startDate), "MMM dd")}`
+                ? `Started ${format(parseISO(activePlan.startDate), "MMM dd")}`
                 : "Create your first meal plan"}
             </p>
           </CardContent>
@@ -130,7 +158,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No meals planned for today</p>
+              <p className="text-gray-500 mb-4">
+                {activePlan 
+                  ? "No meals scheduled for today in your active plan" 
+                  : "No meals planned for today"
+                }
+              </p>
               <Link href="/dashboard/meal-plans/new">
                 <Button>Create Meal Plan</Button>
               </Link>

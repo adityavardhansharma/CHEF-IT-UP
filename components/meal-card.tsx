@@ -139,7 +139,7 @@ export const MealCard = memo(function MealCard({
         <div className="flex gap-2 pt-4 border-t">
           {!meal.consumed && (
             <>
-              <Button onClick={onMarkAsConsumed} className="flex-1">
+              <Button onClick={onMarkAsConsumed} className="flex-1 font-semibold">
                 <Check className="h-4 w-4 mr-2" />
                 Mark as Eaten
               </Button>
@@ -147,11 +147,20 @@ export const MealCard = memo(function MealCard({
                 variant="outline"
                 onClick={() => onRefresh(true)}
                 disabled={isRegenerating}
+                className="hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 transition-all"
+                title="Surprise me with a random recipe"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
               </Button>
-              <Button variant="outline" onClick={onCustomRequest}>
-                Custom Recipe
+              <Button 
+                variant="outline" 
+                onClick={onCustomRequest}
+                disabled={isRegenerating}
+                className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-all font-medium"
+                title="Create a custom recipe"
+              >
+                <ChefHat className="h-4 w-4 mr-2" />
+                Custom
               </Button>
             </>
           )}

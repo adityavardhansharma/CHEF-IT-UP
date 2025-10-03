@@ -1,5 +1,7 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
 
 function convertToGrams(quantity: number, unit: string): number {
   const normalizedUnit = unit.toLowerCase().trim();
@@ -256,18 +258,29 @@ export const getMealsByDate = query({
 
     if (!user) return [];
 
-    if (args.planId) {
-      // Prefer plan-scoped query for the date
-      const planId = args.planId; // narrow to defined within this block
-      return await ctx.db
-        .query("meals")
-        .withIndex("by_plan_and_date", (q) => q.eq("planId", planId).eq("date", args.date))
-        .collect();
+    let targetPlanId: Id<"mealPlans"> | undefined = args.planId;
+
+    // If no planId provided, find the active plan
+    if (!targetPlanId) {
+      const activePlan = await ctx.db
+        .query("mealPlans")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .first();
+
+      if (activePlan) {
+        targetPlanId = activePlan._id;
+      }
     }
 
+    if (!targetPlanId) {
+      return []; // No active plan, no meals
+    }
+
+    // Query meals for the specific plan and date
     return await ctx.db
       .query("meals")
-      .withIndex("by_user_and_date", (q) => q.eq("userId", user._id).eq("date", args.date))
+      .withIndex("by_plan_and_date", (q) => q.eq("planId", targetPlanId).eq("date", args.date))
       .collect();
   },
 });
@@ -404,5 +417,179 @@ export const deleteMealPlan = mutation({
     console.log(`Deleted meal plan ${args.planId}`);
 
     return { planId: args.planId, deletedMeals: meals.length };
+  },
+});
+
+// Action wrapper that can be called from the frontend
+export const regenerateMealAction = action({
+  args: {
+    mealId: v.id("meals"),
+    customRequest: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Get the existing meal
+    const meal = await ctx.runQuery(api.mealPlans.getMealById, { mealId: args.mealId });
+    if (!meal) throw new Error("Meal not found");
+
+    // Get the meal plan for parameters
+    const mealPlan = await ctx.runQuery(api.mealPlans.getMealPlanById, { planId: meal.planId });
+    if (!mealPlan) throw new Error("Meal plan not found");
+
+    // Get user profile
+    const profile = await ctx.runQuery(api.users.getUserProfile);
+    if (!profile) throw new Error("User profile not found");
+
+    // Get pantry items
+    const pantryItems = await ctx.runQuery(api.pantry.getUserPantry);
+
+    // Transform pantry items to the format expected by AI
+    const formattedPantryItems = pantryItems.map((item: any) => ({
+      name: item.name || item.customItemName || "",
+      quantity: item.quantity,
+      unit: item.unit,
+    }));
+
+    // Get user info
+    const user = await ctx.runQuery(api.users.getCurrentUser);
+
+    // Call the AI regeneration action
+    const regeneratedMeal = await ctx.runAction(api.ai.regenerateMealAction, {
+      mealType: meal.mealType,
+      date: meal.date,
+      familySize: mealPlan.parameters.familySize,
+      dietType: mealPlan.parameters.dietType,
+      customRequest: args.customRequest,
+      userProfile: {
+        name: user?.name,
+        allergies: profile.allergies,
+        medicalConditions: profile.medicalConditions,
+        favoriteIngredients: profile.favoriteIngredients,
+      },
+      pantryItems: formattedPantryItems,
+    });
+
+    // Update the meal with the new recipe via mutation
+    await ctx.runMutation(api.mealPlans.updateMealRecipe, {
+      mealId: args.mealId,
+      recipeName: regeneratedMeal.recipeName,
+      recipeDescription: regeneratedMeal.recipeDescription,
+      recipeData: regeneratedMeal.recipeData,
+      nutritionalInfo: regeneratedMeal.nutritionalInfo,
+    });
+
+    return args.mealId;
+  },
+});
+
+// Helper mutation to update meal recipe
+export const updateMealRecipe = mutation({
+  args: {
+    mealId: v.id("meals"),
+    recipeName: v.string(),
+    recipeDescription: v.string(),
+    recipeData: v.object({
+      ingredients: v.array(v.object({
+        name: v.string(),
+        quantity: v.number(),
+        unit: v.string(),
+      })),
+      instructions: v.array(v.string()),
+      cookingTime: v.number(),
+      difficulty: v.string(),
+      utensils: v.array(v.string()),
+    }),
+    nutritionalInfo: v.object({
+      calories: v.number(),
+      protein: v.number(),
+      carbs: v.number(),
+      fat: v.number(),
+      fiber: v.optional(v.number()),
+      sodium: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    await ctx.db.patch(args.mealId, {
+      recipeName: args.recipeName,
+      recipeDescription: args.recipeDescription,
+      recipeData: args.recipeData,
+      nutritionalInfo: args.nutritionalInfo,
+      consumed: false, // Reset consumed status
+    });
+
+    return args.mealId;
+  },
+});
+
+// Helper query to get a single meal by ID
+export const getMealById = query({
+  args: {
+    mealId: v.id("meals"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    return await ctx.db.get(args.mealId);
+  },
+});
+
+// Helper query to get a meal plan by ID
+export const getMealPlanById = query({
+  args: {
+    planId: v.id("mealPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    return await ctx.db.get(args.planId);
+  },
+});
+
+// Add this new mutation to archive completed plans
+export const archiveMealPlan = mutation({
+  args: {
+    planId: v.id("mealPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const plan = await ctx.db.get(args.planId);
+    if (!plan) throw new Error("Meal plan not found");
+
+    // Update plan status to completed and set end date
+    await ctx.db.patch(args.planId, {
+      status: "completed",
+      endDate: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Optionally mark all associated meals as consumed if not already
+    const meals = await ctx.db
+      .query("meals")
+      .withIndex("by_plan", (q) => q.eq("planId", args.planId))
+      .collect();
+
+    for (const meal of meals) {
+      if (!meal.consumed) {
+        await ctx.db.patch(meal._id, {
+          consumed: true,
+          consumedAt: Date.now(),
+        });
+      }
+    }
+
+    return { planId: args.planId, archivedMeals: meals.length };
   },
 });

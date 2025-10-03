@@ -61,6 +61,8 @@ export default defineSchema({
     }),
     status: v.string(), // 'active', 'completed', 'archived'
     createdAt: v.number(),
+    endDate: v.optional(v.number()),
+    updatedAt: v.optional(v.number()), // Add this line for last modification date
   }).index("by_user", ["userId"]),
 
   meals: defineTable({

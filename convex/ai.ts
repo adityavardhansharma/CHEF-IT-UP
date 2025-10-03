@@ -147,3 +147,51 @@ export const generateMealPlanAction = action({
   },
 });
 
+/**
+ * Server-side action to regenerate a single meal using Groq AI
+ */
+export const regenerateMealAction = action({
+  args: {
+    mealType: v.string(),
+    date: v.string(),
+    familySize: v.number(),
+    dietType: v.string(),
+    customRequest: v.optional(v.string()),
+    userProfile: v.object({
+      name: v.optional(v.string()),
+      allergies: v.array(v.object({
+        name: v.string(),
+        severity: v.string(),
+      })),
+      medicalConditions: v.array(v.string()),
+      favoriteIngredients: v.array(v.string()),
+    }),
+    pantryItems: v.array(v.object({
+      name: v.string(),
+      quantity: v.number(),
+      unit: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    // Import regenerateMeal dynamically to avoid client-side issues
+    const { regenerateMeal } = await import("../lib/groq");
+    
+    try {
+      const meal = await regenerateMeal(
+        args.userProfile,
+        args.pantryItems,
+        args.mealType,
+        args.date,
+        args.familySize,
+        args.dietType,
+        args.customRequest
+      );
+      
+      return meal;
+    } catch (error: any) {
+      console.error("Error regenerating meal:", error);
+      throw new Error(`Failed to regenerate meal: ${error.message}`);
+    }
+  },
+});
+
