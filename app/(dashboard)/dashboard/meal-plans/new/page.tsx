@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, X, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -33,6 +34,7 @@ export default function NewMealPlanPage() {
   const [negativeIngredients, setNegativeIngredients] = useState<string[]>([]);
   const [newNegativeIngredient, setNewNegativeIngredient] = useState("");
   const [assumeBasicStaples, setAssumeBasicStaples] = useState(true);
+  const [customInstructions, setCustomInstructions] = useState("");
 
   const profile = useQuery(api.users.getUserProfile);
   const pantryItems = useQuery(api.pantry.getUserPantry);
@@ -120,6 +122,7 @@ export default function NewMealPlanPage() {
           cuisinePreference,
           negativeIngredients,
           assumeBasicStaples,
+          customInstructions: customInstructions.trim() || undefined,
         },
       });
 
@@ -146,6 +149,7 @@ export default function NewMealPlanPage() {
           duration: parseInt(duration),
           durationUnit,
           assumeBasicStaples,
+          customInstructions: customInstructions.trim() || undefined,
         },
       });
 
@@ -350,6 +354,20 @@ export default function NewMealPlanPage() {
             </div>
 
             <div>
+              <Label htmlFor="customInstructions">Custom Instructions (Optional)</Label>
+              <Textarea
+                id="customInstructions"
+                placeholder="Add any specific instructions for your meal plan. For example: 'Focus on quick 15-minute meals', 'Use seasonal ingredients only', 'Make it kid-friendly', or 'Emphasize healthy snacks'."
+                value={customInstructions}
+                onChange={(e) => setCustomInstructions(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                These instructions will be sent to the AI to customize your meal plan according to your preferences.
+              </p>
+            </div>
+
+            <div>
               <Label>Ingredients to Avoid</Label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {negativeIngredients.map((ingredient) => (
@@ -470,6 +488,15 @@ export default function NewMealPlanPage() {
                 {assumeBasicStaples ? "✅ Assumed available" : "❌ Must be in pantry"}
               </p>
             </div>
+
+            {customInstructions && (
+              <div>
+                <Label className="text-xs text-gray-500">Custom Instructions</Label>
+                <p className="text-sm font-medium bg-blue-50 p-3 rounded-md border">
+                  {customInstructions}
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(2)}>

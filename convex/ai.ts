@@ -31,6 +31,7 @@ export const generateMealPlanAction = action({
       duration: v.number(),
       durationUnit: v.string(),
       assumeBasicStaples: v.optional(v.boolean()),
+      customInstructions: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {

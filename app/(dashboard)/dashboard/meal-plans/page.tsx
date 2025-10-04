@@ -80,21 +80,21 @@ export default function MealPlansPage() {
     todayDayNumber = Math.max(1, Math.min(totalDays, daysSinceStart + 1));
   }
 
-  // Set initial day based on URL or today
+  // Set initial day based on URL or today - only run once on mount
   useEffect(() => {
     if (activePlan && totalDays > 0) {
       let targetDay = 1;
-      
+
       if (urlDate) {
         const dateDiff = differenceInDays(parsedDate, startDate);
         targetDay = Math.max(1, Math.min(totalDays, dateDiff + 1));
       } else {
         targetDay = todayDayNumber;
       }
-      
+
       setSelectedDayNumber(targetDay);
     }
-  }, [activePlan, totalDays, urlDate, parsedDate, startDate, todayDayNumber]);
+  }, []); // Only run once on mount
 
   const currentDate = new Date(startDate);
   currentDate.setUTCDate(startDate.getUTCDate() + (selectedDayNumber - 1));
@@ -235,15 +235,17 @@ export default function MealPlansPage() {
     }
   };
 
-  // Update URL when day changes
+  // Update URL when day changes - only when state changes, not on URL changes
   useEffect(() => {
-    if (activePlan) {
+    if (activePlan && selectedDayNumber > 0) {
       const currentDate = new Date(startDate);
       currentDate.setUTCDate(startDate.getUTCDate() + (selectedDayNumber - 1));
       const dateStr = format(currentDate, "yyyy-MM-dd");
-      router.push(`/dashboard/meal-plans?date=${dateStr}`, { scroll: false });
+
+      // Always update URL when selectedDayNumber changes (but don't trigger re-renders)
+      router.replace(`/dashboard/meal-plans?date=${dateStr}`, { scroll: false });
     }
-  }, [selectedDayNumber, activePlan, startDate, router]);
+  }, [selectedDayNumber, activePlan, startDate, router]); // Removed searchParams to prevent loops
 
   const totalCalories = mealsForDate?.reduce((sum, meal) => sum + (meal.nutritionalInfo?.calories || 0), 0) || 0;
   const consumedCalories =

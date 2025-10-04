@@ -58,6 +58,7 @@ export default defineSchema({
       cuisinePreference: v.optional(v.string()),
       negativeIngredients: v.array(v.string()),
       assumeBasicStaples: v.optional(v.boolean()),
+      customInstructions: v.optional(v.string()), // Custom instructions for the meal plan
     }),
     status: v.string(), // 'active', 'completed', 'archived'
     createdAt: v.number(),
