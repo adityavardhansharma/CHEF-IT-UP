@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, X, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Id } from "@/convex/_generated/dataModel";
-import { searchIngredients, createCustomIngredient, getPopularIngredients } from "@/lib/food-api";
+import { searchIngredients, createCustomIngredient, getPopularIngredients, initializeSearchCache } from "@/lib/food-api";
 import { APP_BRANDING, UI_TEXT } from "@/lib/branding";
+import { cn } from "@/lib/utils";
 
 export default function PantryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,9 +31,10 @@ export default function PantryPage() {
   const [unit, setUnit] = useState("kg");
   const [isSearching, setIsSearching] = useState(false);
   const [apiResults, setApiResults] = useState<any[]>([]);
-  const [showCustomInput, setShowCustomInput] = useState(false);
   const [customIngredientName, setCustomIngredientName] = useState("");
   const [customCategory, setCustomCategory] = useState("Custom");
+  const [searchMode, setSearchMode] = useState<"search" | "popular" | "custom">("popular");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const pantryItems = useQuery(api.pantry.getUserPantry);
   const localResults = useQuery(
@@ -47,24 +49,42 @@ export default function PantryPage() {
 
   const { toast } = useToast();
 
-  const handleSearch = async (query: string) => {
+  // Initialize cache on component mount
+  useEffect(() => {
+    initializeSearchCache();
+  }, []);
+
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
     
     if (query.length < 2) {
       setApiResults([]);
+      setIsSearching(false);
       return;
     }
 
+    // Show loading immediately
     setIsSearching(true);
-    try {
-      const results = await searchIngredients(query);
-      setApiResults(results);
-    } catch (error) {
-      console.error("Search error:", error);
-      setApiResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    
+    // Debounce API call - minimal delay for instant feel
+    const timeout = setTimeout(async () => {
+      try {
+        const results = await searchIngredients(query);
+        setApiResults(results);
+      } catch (error) {
+        console.error("Search error:", error);
+        setApiResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 150); // Wait 150ms after user stops typing (instant feel!)
+    
+    setSearchTimeout(timeout);
   };
 
   const handleAddItem = async (item: any) => {
@@ -120,7 +140,7 @@ export default function PantryPage() {
       setApiResults([]);
       setQuantity("");
       setSelectedItem(null);
-      setShowCustomInput(false);
+      setSearchMode("popular");
     } catch (error) {
       toast({
         title: "Error",
@@ -142,7 +162,6 @@ export default function PantryPage() {
 
     const customItem = createCustomIngredient(customIngredientName, customCategory);
     setSelectedItem({ ...customItem, isApiResult: true });
-    setShowCustomInput(false);
     setCustomIngredientName("");
   };
 
@@ -191,229 +210,278 @@ export default function PantryPage() {
               Add Item
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add Pantry Item</DialogTitle>
-              <DialogDescription>
-                {APP_BRANDING.ingredientSearch.description}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div>
-                <Label>Search Ingredients</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder={UI_TEXT.pantry.searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                  {isSearching && (
-                    <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-400" />
-                  )}
+          <DialogContent className="max-w-6xl h-[85vh] p-0 gap-0 overflow-hidden">
+            <div className="h-full flex flex-col">
+              {/* Floating Search */}
+              <div className="relative z-10 px-6 pt-6 pb-4">
+                <div className="relative max-w-2xl mx-auto">
+                  <div className="absolute inset-0 bg-primary/20 blur-2xl opacity-50" />
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search ingredients..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="h-14 pl-12 pr-12 text-lg bg-background/95 backdrop-blur-xl border-2 border-border shadow-2xl rounded-2xl"
+                      autoFocus
+                    />
+                    {isSearching && (
+                      <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-primary" />
+                    )}
+                    {!isSearching && searchQuery && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setApiResults([]);
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {UI_TEXT.pantry.searchPoweredBy}
-                </p>
               </div>
 
-              {!selectedItem && searchQuery.length === 0 && (
-                <div>
-                  <Label className="text-sm font-semibold mb-2 block">Popular Ingredients:</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {popularIngredients.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => setSelectedItem({ ...item, isApiResult: true })}
-                        className="text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-gray-500">{item.category}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {searchQuery.length >= 2 && allResults.length > 0 && !selectedItem && (
-                <div className="max-h-60 overflow-y-auto border rounded-lg">
-                  {allResults.map((item, index) => (
-                    <button
-                      key={item.id || index}
-                      onClick={() => setSelectedItem(item)}
-                      className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {item.image && (
-                          <img src={item.image} alt={item.name} className="w-10 h-10 rounded" />
-                        )}
-                        <div className="flex-1">
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {item.category}
+              {/* Masonry Grid Results */}
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                {!selectedItem ? (
+                <>
+                  {searchQuery.length >= 2 ? (
+                    <div className="space-y-4">
+                      {isSearching ? (
+                        <div className="h-[450px] flex items-center justify-center">
+                          <div className="text-center space-y-4">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                              <Loader2 className="relative h-12 w-12 animate-spin text-primary mx-auto" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Searching...</p>
+                              <p className="text-sm text-muted-foreground mt-1">Finding the best matches</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {searchQuery.length >= 2 && allResults.length === 0 && !isSearching && (
-                <div className="text-center py-8 border rounded-lg">
-                  <p className="text-gray-500 mb-4">{UI_TEXT.pantry.noResults} for "{searchQuery}"</p>
-                  <Button onClick={() => setShowCustomInput(true)} variant="outline">
-                    {UI_TEXT.pantry.addCustom}
-                  </Button>
-                </div>
-              )}
-
-              {showCustomInput && (
-                <div className="space-y-4 p-4 border rounded-lg bg-orange-50">
-                  <div>
-                    <Label htmlFor="customName">Custom Ingredient Name</Label>
-                    <Input
-                      id="customName"
-                      placeholder="e.g., Homemade Sauce"
-                      value={customIngredientName}
-                      onChange={(e) => setCustomIngredientName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customCategory">Category</Label>
-                    <select
-                      id="customCategory"
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="Custom">Custom</option>
-                      <option value="Vegetables">Vegetables</option>
-                      <option value="Fruits">Fruits</option>
-                      <option value="Proteins">Proteins</option>
-                      <option value="Grains">Grains</option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Spices">Spices</option>
-                      <option value="Oils">Oils</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <Button onClick={handleAddCustomIngredient} className="w-full">
-                    Create Custom Ingredient
-                  </Button>
-                </div>
-              )}
-
-              {selectedItem && (
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                      {selectedItem.image && (
-                        <img
-                          src={selectedItem.image}
-                          alt={selectedItem.name}
-                          className="w-16 h-16 rounded"
-                        />
+                      ) : allResults.length > 0 ? (
+                        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+                          {allResults.map((item, index) => (
+                            <div
+                              key={item.id || index}
+                              className="break-inside-avoid"
+                            >
+                              <button
+                                onClick={() => setSelectedItem(item)}
+                                className="w-full p-4 text-left bg-card hover:bg-accent/50 border border-border/40 rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <h4 className="font-semibold text-sm leading-tight flex-1">
+                                    {item.name}
+                                  </h4>
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                                      <Plus className="h-3.5 w-3.5 text-primary" />
+                                    </div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground capitalize mb-3">{item.category}</p>
+                                {item.nutritionalInfo && (
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="px-2 py-1 bg-background/50 rounded">
+                                      <span className="font-medium">{item.nutritionalInfo.calories}</span> cal
+                                    </div>
+                                    <div className="px-2 py-1 bg-background/50 rounded">
+                                      <span className="font-medium">{item.nutritionalInfo.protein}g</span> pro
+                                    </div>
+                                  </div>
+                                )}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="h-[450px] flex items-center justify-center">
+                          <div className="text-center space-y-6 max-w-md">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full" />
+                              <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-2xl flex items-center justify-center">
+                                <Search className="h-10 w-10 text-orange-500" />
+                              </div>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-lg mb-2">No results for "{searchQuery}"</p>
+                              <p className="text-sm text-muted-foreground">Try a different search or create your own ingredient</p>
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                setCustomIngredientName(searchQuery);
+                                const customItem = createCustomIngredient(searchQuery, "Custom");
+                                setSelectedItem({ ...customItem, isApiResult: true });
+                              }}
+                              size="lg"
+                              className="gap-2"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              Create "{searchQuery}"
+                            </Button>
+                          </div>
+                        </div>
                       )}
-                      <div>
-                        <h3 className="font-semibold text-lg">{selectedItem.name}</h3>
-                        <p className="text-sm text-gray-600">Category: {selectedItem.category}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between px-1 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-semibold">Popular Ingredients</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const customItem = createCustomIngredient("", "Custom");
+                            setSelectedItem({ ...customItem, isApiResult: true });
+                          }}
+                          className="text-sm text-primary hover:underline flex items-center gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Create custom
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {popularIngredients.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedItem({ ...item, isApiResult: true })}
+                            className="group relative p-4 border border-border rounded-xl hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-200 text-left bg-card"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
+                            <div className="relative space-y-1">
+                              <div className="font-medium text-sm truncate">{item.name}</div>
+                              <div className="text-xs text-muted-foreground capitalize truncate">{item.category}</div>
+                              <div className="text-xs text-muted-foreground/70 pt-1">
+                                {item.nutritionalInfo.calories} cal
+                              </div>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-2 text-xs mt-3">
-                      <div>
-                        <span className="text-gray-500">Calories:</span>
-                        <br />
-                        <span className="font-semibold">
-                          {selectedItem.nutritionalInfo?.calories || 0}
-                        </span>
+                  )}
+                </>
+              ) : (
+                /* Floating Add Form */
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                  <div className="w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    {/* Header */}
+                    <div className="p-6 border-b border-border/40">
+                      <div className="flex items-start justify-between mb-4">
+                        {selectedItem.id?.startsWith("custom-") ? (
+                          <div className="flex-1 space-y-3">
+                            <Input
+                              placeholder="Ingredient name"
+                              value={customIngredientName || selectedItem.name}
+                              onChange={(e) => {
+                                setCustomIngredientName(e.target.value);
+                                setSelectedItem({ ...selectedItem, name: e.target.value });
+                              }}
+                              className="text-base font-semibold"
+                            />
+                            <select
+                              value={customCategory}
+                              onChange={(e) => {
+                                setCustomCategory(e.target.value);
+                                setSelectedItem({ ...selectedItem, category: e.target.value });
+                              }}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                              <option value="Custom">Custom</option>
+                              <option value="Vegetables">Vegetables</option>
+                              <option value="Fruits">Fruits</option>
+                              <option value="Proteins">Proteins</option>
+                              <option value="Grains">Grains</option>
+                              <option value="Dairy">Dairy</option>
+                              <option value="Spices">Spices</option>
+                              <option value="Oils">Oils</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 className="text-xl font-semibold mb-1">{selectedItem.name}</h3>
+                            <p className="text-sm text-muted-foreground capitalize">{selectedItem.category}</p>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedItem(null);
+                            setQuantity("");
+                            setCustomIngredientName("");
+                          }}
+                          className="text-muted-foreground hover:text-foreground ml-3"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Protein:</span>
-                        <br />
-                        <span className="font-semibold">
-                          {selectedItem.nutritionalInfo?.protein || 0}g
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Carbs:</span>
-                        <br />
-                        <span className="font-semibold">
-                          {selectedItem.nutritionalInfo?.carbs || 0}g
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Fat:</span>
-                        <br />
-                        <span className="font-semibold">
-                          {selectedItem.nutritionalInfo?.fat || 0}g
-                        </span>
-                      </div>
+                      {selectedItem.nutritionalInfo && !selectedItem.id?.startsWith("custom-") && (
+                        <div className="flex gap-3">
+                          <div className="flex-1 p-3 bg-muted/50 rounded-lg text-center">
+                            <div className="text-2xl font-bold">{selectedItem.nutritionalInfo.calories}</div>
+                            <div className="text-xs text-muted-foreground mt-1">Calories</div>
+                          </div>
+                          <div className="flex-1 p-3 bg-muted/50 rounded-lg text-center">
+                            <div className="text-2xl font-bold">{selectedItem.nutritionalInfo.protein}g</div>
+                            <div className="text-xs text-muted-foreground mt-1">Protein</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="unit">Unit</Label>
-                      <select
-                        id="unit"
-                        value={unit}
-                        onChange={(e) => setUnit(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    {/* Form */}
+                    <div className="p-6 space-y-4">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground mb-2 block">Quantity</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0"
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            className="h-12 text-xl font-semibold text-center"
+                          />
+                        </div>
+                        <div className="w-32">
+                          <Label className="text-xs text-muted-foreground mb-2 block">Unit</Label>
+                          <select
+                            value={unit}
+                            onChange={(e) => setUnit(e.target.value)}
+                            className="flex h-12 w-full rounded-md border border-input bg-background px-3 text-sm font-medium"
+                          >
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="lb">lb</option>
+                            <option value="oz">oz</option>
+                            <option value="l">l</option>
+                            <option value="ml">ml</option>
+                            <option value="cup">cup</option>
+                            <option value="tbsp">tbsp</option>
+                            <option value="tsp">tsp</option>
+                            <option value="pieces">pcs</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={() => handleAddItem(selectedItem)} 
+                        className="w-full h-12 text-base"
                       >
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="g">Grams (g)</option>
-                        <option value="lb">Pounds (lb)</option>
-                        <option value="oz">Ounces (oz)</option>
-                        <option value="l">Liters (l)</option>
-                        <option value="ml">Milliliters (ml)</option>
-                        <option value="cup">Cups</option>
-                        <option value="tbsp">Tablespoons</option>
-                        <option value="tsp">Teaspoons</option>
-                        <option value="pieces">Pieces</option>
-                      </select>
+                        <Plus className="h-5 w-5 mr-2" />
+                        Add to Pantry
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleAddItem(selectedItem)} className="flex-1">
-                      Add to Pantry
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedItem(null);
-                        setQuantity("");
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
                 </div>
               )}
-
-              {!selectedItem && !showCustomInput && searchQuery.length < 2 && (
-                <div className="text-center py-4">
-                  <p className="text-sm text-gray-500 mb-2">Can't find what you're looking for?</p>
-                  <Button onClick={() => setShowCustomInput(true)} variant="outline" size="sm">
-                    Add Custom Ingredient
-                  </Button>
-                </div>
-              )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>

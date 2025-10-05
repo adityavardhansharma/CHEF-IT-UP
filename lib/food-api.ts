@@ -13,16 +13,73 @@ interface Ingredient {
   };
 }
 
+// Client-side cache for search results - stores ALL fetched data permanently
+const searchCache = new Map<string, { results: Ingredient[]; timestamp: number }>();
+const allIngredientsCache = new Map<string, Ingredient>(); // Store every ingredient by normalized name
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+// Prefetch cache for common searches
+let isPrefetching = false;
+const COMMON_PREFETCH_TERMS = [
+  'chicken', 'rice', 'tomato', 'onion', 'potato', 'egg', 'milk', 'bread',
+  'pasta', 'cheese', 'lettuce', 'carrot', 'apple', 'banana', 'beef', 'fish',
+  'oil', 'butter', 'flour', 'sugar', 'salt', 'pepper', 'garlic', 'ginger'
+];
+
+// Save cache to localStorage
+function saveCacheToLocalStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const cacheData = Array.from(allIngredientsCache.entries());
+    localStorage.setItem('ingredient-cache', JSON.stringify(cacheData));
+    localStorage.setItem('ingredient-cache-time', Date.now().toString());
+  } catch (error) {
+    console.warn('Failed to save cache to localStorage:', error);
+  }
+}
+
+// Load cache from localStorage
+function loadCacheFromLocalStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const cacheData = localStorage.getItem('ingredient-cache');
+    const cacheTime = localStorage.getItem('ingredient-cache-time');
+    
+    if (cacheData && cacheTime) {
+      const age = Date.now() - parseInt(cacheTime);
+      // Load cache if less than 24 hours old
+      if (age < 24 * 60 * 60 * 1000) {
+        const entries = JSON.parse(cacheData);
+        entries.forEach(([key, value]: [string, Ingredient]) => {
+          allIngredientsCache.set(key, value);
+        });
+        console.log(`Loaded ${allIngredientsCache.size} ingredients from localStorage cache`);
+      } else {
+        localStorage.removeItem('ingredient-cache');
+        localStorage.removeItem('ingredient-cache-time');
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load cache from localStorage:', error);
+  }
+}
+
+// Initialize cache from localStorage
+if (typeof window !== 'undefined') {
+  loadCacheFromLocalStorage();
+}
+
 /**
  * Search ingredients using Open Food Facts API (100% FREE, No API Key Required!)
  * World's largest open food database - completely free and open source
+ * Fetches more results and caches them aggressively
  */
 export async function searchOpenFoodFacts(query: string): Promise<Ingredient[]> {
   try {
     const response = await fetch(
       `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
         query
-      )}&page_size=20&json=1&fields=product_name,nutriments,categories,image_url`
+      )}&page_size=50&json=1&fields=product_name,nutriments,categories,image_url`
     );
 
     if (!response.ok) {
@@ -57,6 +114,13 @@ export async function searchOpenFoodFacts(query: string): Promise<Ingredient[]> 
   }
 }
 
+// Rate limiting and cooldown for USDA API
+let lastUSDACall = 0;
+let usdaFailureCount = 0;
+let usdaCooldownUntil = 0;
+const USDA_RATE_LIMIT_MS = 2000; // 2 seconds between calls
+const USDA_COOLDOWN_MS = 60000; // 1 minute cooldown after rate limit
+
 /**
  * Search ingredients using USDA FoodData Central API (100% FREE!)
  * No API key required - DEMO_KEY works forever
@@ -64,6 +128,20 @@ export async function searchOpenFoodFacts(query: string): Promise<Ingredient[]> 
  */
 export async function searchUSDAIngredients(query: string): Promise<Ingredient[]> {
   try {
+    // Check if we're in cooldown period
+    const now = Date.now();
+    if (now < usdaCooldownUntil) {
+      console.log("USDA API in cooldown, skipping...");
+      return [];
+    }
+
+    // Rate limiting - wait if needed
+    const timeSinceLastCall = now - lastUSDACall;
+    if (timeSinceLastCall < USDA_RATE_LIMIT_MS) {
+      await new Promise(resolve => setTimeout(resolve, USDA_RATE_LIMIT_MS - timeSinceLastCall));
+    }
+    lastUSDACall = Date.now();
+
     // DEMO_KEY is free forever, no signup required!
     const response = await fetch(
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
@@ -72,8 +150,18 @@ export async function searchUSDAIngredients(query: string): Promise<Ingredient[]
     );
 
     if (!response.ok) {
+      // Rate limited - enter cooldown period
+      if (response.status === 429) {
+        usdaFailureCount++;
+        usdaCooldownUntil = Date.now() + USDA_COOLDOWN_MS;
+        console.log("USDA API rate limited, entering 1-minute cooldown...");
+        return [];
+      }
       throw new Error("USDA API error");
     }
+
+    // Success - reset failure count
+    usdaFailureCount = 0;
 
     const data = await response.json();
 
@@ -106,7 +194,7 @@ export async function searchUSDAIngredients(query: string): Promise<Ingredient[]
 
     return ingredients.slice(0, 15);
   } catch (error) {
-    console.error("USDA API error:", error);
+    console.warn("USDA API skipped:", error);
     return [];
   }
 }
@@ -138,31 +226,95 @@ export function createCustomIngredient(name: string, category: string = "Custom"
 }
 
 /**
- * Main search function - Uses 100% FREE APIs only!
- * Searches both USDA and Open Food Facts in parallel for best results
+ * Prefetch common ingredients in background (non-blocking)
+ */
+async function prefetchCommonIngredients() {
+  if (isPrefetching) return;
+  isPrefetching = true;
+
+  // Prefetch in background without blocking
+  setTimeout(async () => {
+    for (const term of COMMON_PREFETCH_TERMS) {
+      const cacheKey = term.toLowerCase();
+      if (!searchCache.has(cacheKey)) {
+        try {
+          const results = await searchOpenFoodFacts(term);
+          searchCache.set(cacheKey, { results, timestamp: Date.now() });
+          // Small delay between prefetches to not overwhelm
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+          console.warn(`Prefetch failed for ${term}:`, error);
+        }
+      }
+    }
+  }, 1000); // Start prefetching after 1 second
+}
+
+/**
+ * Main search function - Uses 100% FREE APIs with aggressive client-side caching!
+ * All fetched ingredients are stored permanently in localStorage
  */
 export async function searchIngredients(query: string): Promise<Ingredient[]> {
   if (query.length < 2) return [];
 
+  // Start prefetching common ingredients on first search
+  if (!isPrefetching) {
+    prefetchCommonIngredients();
+  }
+
+  const cacheKey = query.toLowerCase();
+  
+  // INSTANT: Check exact search result cache (fastest - O(1) lookup)
+  const cached = searchCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    console.log(`⚡ INSTANT cache hit for "${query}"`);
+    return cached.results;
+  }
+
+  // Skip expensive localStorage scan entirely - just hit API
+  // The searchCache already handles caching efficiently
+
+  console.log(`🌐 Fetching from API for "${query}"...`);
   const results: Ingredient[] = [];
 
-  // Search both APIs in parallel (both are 100% free!)
-  const [usdaResults, openFoodResults] = await Promise.allSettled([
-    searchUSDAIngredients(query),
-    searchOpenFoodFacts(query),
-  ]);
-
-  // Add USDA results
-  if (usdaResults.status === "fulfilled" && usdaResults.value.length > 0) {
-    results.push(...usdaResults.value);
+  // Fetch from API and cache EVERYTHING
+  try {
+    const openFoodResults = await searchOpenFoodFacts(query);
+    if (openFoodResults.length > 0) {
+      // Store every ingredient in permanent cache
+      openFoodResults.forEach(ingredient => {
+        const normalizedName = ingredient.name.toLowerCase().trim();
+        allIngredientsCache.set(normalizedName, ingredient);
+      });
+      results.push(...openFoodResults);
+      
+      // Save to localStorage less frequently (don't block)
+      if (allIngredientsCache.size % 100 === 0) {
+        setTimeout(() => saveCacheToLocalStorage(), 0); // Non-blocking
+      }
+    }
+  } catch (error) {
+    console.warn("Open Food Facts search failed:", error);
   }
 
-  // Add Open Food Facts results
-  if (openFoodResults.status === "fulfilled" && openFoodResults.value.length > 0) {
-    results.push(...openFoodResults.value);
+  // Only use USDA as last resort
+  if (results.length === 0) {
+    try {
+      const usdaResults = await searchUSDAIngredients(query);
+      if (usdaResults.length > 0) {
+        // Store USDA results too
+        usdaResults.forEach(ingredient => {
+          const normalizedName = ingredient.name.toLowerCase().trim();
+          allIngredientsCache.set(normalizedName, ingredient);
+        });
+        results.push(...usdaResults);
+      }
+    } catch (error) {
+      console.warn("USDA search failed:", error);
+    }
   }
 
-  // Remove duplicates based on name similarity
+  // Remove duplicates
   const uniqueResults = results.filter((item, index, self) => {
     const firstIndex = self.findIndex(
       (i) => i.name.toLowerCase().trim() === item.name.toLowerCase().trim()
@@ -170,7 +322,51 @@ export async function searchIngredients(query: string): Promise<Ingredient[]> {
     return firstIndex === index;
   });
 
-  return uniqueResults.slice(0, 20); // Return max 20 results
+  const finalResults = uniqueResults.slice(0, 20);
+
+  // Cache the search results (this is fast - in-memory)
+  searchCache.set(cacheKey, { results: finalResults, timestamp: Date.now() });
+
+  // Save to localStorage in background (non-blocking)
+  setTimeout(() => saveCacheToLocalStorage(), 1000);
+
+  console.log(`📦 ${allIngredientsCache.size} ingredients cached`);
+
+  return finalResults;
+}
+
+/**
+ * Clear expired cache entries (runs automatically)
+ */
+function cleanupCache() {
+  const now = Date.now();
+  for (const [key, value] of searchCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      searchCache.delete(key);
+    }
+  }
+}
+
+// Run cache cleanup every 10 minutes
+if (typeof window !== 'undefined') {
+  setInterval(cleanupCache, 10 * 60 * 1000);
+}
+
+/**
+ * Manually trigger prefetch (exported for UI)
+ */
+export function initializeSearchCache() {
+  prefetchCommonIngredients();
+}
+
+/**
+ * Get cache statistics (for debugging)
+ */
+export function getCacheStats() {
+  return {
+    size: searchCache.size,
+    isPrefetching,
+  };
 }
 
 /**

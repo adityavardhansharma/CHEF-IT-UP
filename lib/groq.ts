@@ -35,7 +35,7 @@ export interface MealPlanParameters {
   familySize: number;
   mealsPerDay: string[];
   dietType: string;
-  cuisinePreference?: string;
+  cuisinePreferences?: string[]; // Optional array
   negativeIngredients: string[];
   duration: number;
   durationUnit: string;
@@ -327,71 +327,76 @@ export async function generateMealPlan(
 
   const customInstructionsText = parameters.customInstructions ? `CUSTOM INSTRUCTIONS: ${parameters.customInstructions}` : "";
 
-  const prompt = `You are a world-class culinary expert creating a personalized ${totalDays}-day meal plan for ${parameters.familySize} people. This plan must be diverse, nutritious, and exciting - NO REPEATED RECIPES across any days or meal types. Each recipe must be completely unique in ingredients, preparation, flavors, and cultural influences.
+  // Create explicit meal sequence for clarity
+  const mealSequence = parameters.mealsPerDay.map((meal, idx) => `${idx + 1}. ${meal}`).join(", ");
+  
+  const cuisineText = parameters.cuisinePreferences && parameters.cuisinePreferences.length > 0
+    ? parameters.cuisinePreferences.join(", ")
+    : "varied international";
+  
+  const prompt = `You are a professional meal planner creating a ${totalDays}-day cohesive meal plan for ${parameters.familySize} people.
 
-DETAILED USER PROFILE (MUST INCORPORATE EVERY DETAIL):
-- Family size: ${parameters.familySize} people (scale ALL quantities accordingly)
-- Dietary preferences: ${parameters.dietType} (strictly adhere)
-- Cuisine preference: ${parameters.cuisinePreference || "varied international"}
-- Allergies (CRITICAL - AVOID COMPLETELY): ${userProfile.allergies.map(a => `${a.name} (${a.severity} severity)`).join(", ") || "None"}
-- Medical conditions (adapt for): ${userProfile.medicalConditions.join(", ") || "None"}
-- Favorite ingredients (feature prominently): ${userProfile.favoriteIngredients.join(", ") || "None specified"}
-- Negative ingredients (NEVER USE): ${parameters.negativeIngredients.join(", ") || "None"}
-
+USER REQUIREMENTS:
+- Family size: ${parameters.familySize}
+- Diet: ${parameters.dietType}
+- Cuisines to mix: ${cuisineText} (create a diverse blend of these cuisines across the meal plan)
+- Allergies (AVOID): ${userProfile.allergies.map(a => a.name).join(", ") || "None"}
+- Avoid ingredients: ${parameters.negativeIngredients.join(", ") || "None"}
 ${customInstructionsText}
 
-PANTRY INVENTORY (MUST USE CREATIVELY IN EVERY RECIPE):
-${pantryItems.map(item => `- ${item.name}: ${item.quantity} ${item.unit} available`).join("\n")}
-IMPORTANT: Incorporate these pantry items thoughtfully in recipes to minimize shopping. Be creative with substitutions and combinations. If pantry items are limited, suggest smart ways to stretch them across meals.
+PANTRY ITEMS TO USE:
+${pantryItems.slice(0, 15).map(item => `- ${item.name}: ${item.quantity} ${item.unit}`).join("\n")}
 
-MEAL STRUCTURE REQUIREMENTS:
-- Generate EXACTLY ${totalMeals} UNIQUE recipes: ${totalDays} days × ${parameters.mealsPerDay.length} meals per day (${mealTypesList})
-- DAILY VARIETY: Each day should feel like a complete culinary journey - different flavors, textures, cooking methods
-- MEAL TYPE SPECIALIZATION: 
-  - Breakfast: Energizing, quick-prep, nutrient-dense starts
-  - Lunch: Balanced, portable or light meals for midday
-  - Dinner: Hearty, family-style meals with complex flavors
-- PROGRESSIVE PLANNING: Days 1-2 simple/familiar, Days 3-5 adventurous, Days 6-7 celebratory/elevated
-- CULTURAL DIVERSITY: Mix cuisines across days (e.g., Mediterranean Mon, Asian Tue, Latin Wed, etc.)
-- SEASONAL AWARENESS: Use fresh, seasonal ingredient vibes even if not specified
+CRITICAL PLANNING RULES:
+1. Generate EXACTLY ${totalMeals} recipes (${totalDays} days × ${parameters.mealsPerDay.length} meals per day)
+2. EXACT MEAL TYPES IN THIS ORDER for EACH day: ${mealSequence}
+   - You MUST create recipes for these EXACT meal types in this EXACT order
+   - DO NOT substitute or skip any meal type
+   - Each day follows the same meal type sequence
+3. PLAN EACH DAY AS A COHESIVE UNIT - meals within a day should complement each other:
+   - Avoid repeating main ingredients on the same day
+   - Balance flavors throughout the day
+   - Coordinate cooking methods - don't make everything the same way
+4. CUISINE MIXING STRATEGY:
+   - Distribute the selected cuisines (${cuisineText}) across all ${totalDays} days
+   - Each day can feature 1-2 cuisines to maintain cohesion
+   - Create fusion dishes that blend multiple cuisines creatively
+   - Ensure all selected cuisines appear multiple times throughout the plan
+5. NO DUPLICATE RECIPES across the entire ${totalDays}-day plan
 
-TECHNICAL SPECIFICATIONS:
-- All quantities: Total for ${parameters.familySize} people (e.g., "2 cups rice" serves all)
-- Nutrition values: Per person estimates (divide total by family size)
-- CRITICAL: ALL NUMBERS MUST BE NUMERIC VALUES, NOT WORDS. Use 30 for thirty grams, 2.5 for two and a half cups. NEVER use words like "thirty", "two", "half" in numeric fields.
-- Ingredient format: STRICTLY {"name":"ingredient","quantity":2.5,"unit":"cups"} - quantity as number, unit as string
-- Instructions: Step-by-step, numbered, detailed, and comprehensive (include prep times, cooking techniques, tips, safety notes, and serving suggestions). Keep each recipe concise; prefer 3-6 clear steps to avoid overly long instruction arrays which can cause JSON parsing issues.
-- Cooking time: Realistic estimate in minutes as NUMBER (e.g., 45, not "45 minutes")
-- Difficulty: easy/medium/hard based on complexity
-- Utensils: List specific tools needed beyond basics
+OUTPUT STRUCTURE - FOLLOW THIS EXACT PATTERN:
+${Array.from({length: totalDays}, (_, i) => {
+  const dayNum = i + 1;
+  const dayMeals = parameters.mealsPerDay.map(type => `  - "${type}"`).join("\n");
+  return `Day ${dayNum}:\n${dayMeals}`;
+}).join("\n")}
 
-OUTPUT FORMAT - ABSOLUTE JSON ONLY:
-Generate a complete JSON object with ALL ${totalMeals} meals in the "meals" array. No explanations, no markdown, no additional text. Ensure ALL numeric fields are actual numbers (0-9 digits), not words.
+TECHNICAL FORMAT:
+- Numbers: Use digits only (30, 2.5, 45) - NO words
+- Ingredients: {"name":"item","quantity":2,"unit":"cups"}
+- Instructions: 4-6 clear steps
+- Times in minutes as numbers
+- mealType must match EXACTLY: ${parameters.mealsPerDay.map(m => `"${m}"`).join(", ")}
 
 {
   "meals": [
-    {
+${parameters.mealsPerDay.map((mealType, idx) => `    {
       "day": 1,
       "date": "YYYY-MM-DD",
-      "mealType": "breakfast",
-      "recipeName": "Unique Recipe Name",
-      "recipeDescription": "Engaging 1-2 sentence description highlighting what makes this special",
+      "mealType": "${mealType}",
+      "recipeName": "Creative ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Name",
+      "recipeDescription": "Brief description",
       "recipeData": {
         "ingredients": [
-          {"name": "Extra virgin olive oil", "quantity": 2, "unit": "tbsp"},
-          {"name": "Fresh eggs", "quantity": 4, "unit": "whole"}
+          {"name": "ingredient", "quantity": 2, "unit": "tbsp"}
         ],
         "instructions": [
-          "Step 1: Preheat your oven to 400°F (200°C) and line a baking sheet with parchment paper for easy cleanup. While the oven heats, finely chop 2 cloves of garlic and a handful of fresh herbs.",
-          "Step 2: In a large mixing bowl, combine 1.5 lbs of ground meat with the chopped garlic, herbs, 1 beaten egg, 1/4 cup breadcrumbs, salt, and pepper. Mix thoroughly with your hands until well combined - about 2 minutes of mixing.",
-          "Step 3: Form the mixture into 8 equal-sized patties, about 1/2 inch thick. Make a small indentation in the center of each patty with your thumb to prevent them from puffing up during cooking.",
-          "Step 4: Heat 2 tablespoons of olive oil in a large skillet over medium-high heat. Cook the patties for 4-5 minutes per side until browned and internal temperature reaches 160°F (71°C).",
-          "Step 5: While patties cook, slice 2 tomatoes, 1 red onion, and prepare your favorite toppings. Toast 8 burger buns if desired.",
-          "Step 6: Assemble burgers by placing a patty on each bun bottom, adding toppings, and covering with the top bun. Serve immediately with your favorite sides."
+          "Step 1: Detailed instruction",
+          "Step 2: Another step"
         ],
-        "cookingTime": 15,
+        "cookingTime": 30,
         "difficulty": "easy",
-        "utensils": ["non-stick skillet", "spatula", "whisk"]
+        "utensils": ["tool"]
       },
       "nutritionalInfo": {
         "calories": 350,
@@ -402,24 +407,22 @@ Generate a complete JSON object with ALL ${totalMeals} meals in the "meals" arra
         "sodium": 280
       },
       "portionSize": ${parameters.familySize}
-    }
-    // Repeat this exact structure for ALL ${totalMeals} unique meals
-    // Day 1: breakfast, lunch, dinner
-    // Day 2: breakfast, lunch, dinner
-    // ... continue through Day ${totalDays}
+    }${idx < parameters.mealsPerDay.length - 1 ? ',' : ''}`).join('\n')}
+    // Continue this pattern for ALL ${totalDays} days
+    // Each day has these ${parameters.mealsPerDay.length} meals: ${parameters.mealsPerDay.join(", ")}
+    // Total: ${totalMeals} meal objects
   ]
 }
 
-CRITICAL RULES:
-1. ZERO DUPLICATES: Every recipe must be 100% original - different ingredients, methods, flavors
-2. PANTRY INTEGRATION: Use available pantry items in at least 70% of recipes
-3. ALLERGY COMPLIANCE: Never even mention allergic ingredients
-4. FAMILY SCALING: All measurements serve exactly ${parameters.familySize} people
-5. DETAILED INSTRUCTIONS: Each recipe must have comprehensive, step-by-step instructions like a professional cookbook - include prep times, cooking techniques, tips, safety notes, and serving suggestions (8-12 detailed steps minimum)
-6. JSON VALIDITY: Perfectly parseable JSON - no broken structures. ALL NUMBERS ARE DIGITS (e.g., 30, 2.5, 45) - NO WORDS LIKE "thirty", "two", "forty-five"
-7. COMPLETE COVERAGE: Exactly ${totalDays} days with all ${parameters.mealsPerDay.length} meals each - no missing entries
+MANDATORY OUTPUT RULES:
+1. Generate ALL ${totalMeals} meals in strict sequential order - do NOT skip any
+2. Each day MUST have exactly ${parameters.mealsPerDay.length} meals (${mealTypesList})
+3. NO duplicate recipes across the entire plan
+4. All numbers must be digits (30, 2.5) - NO text words
+5. Follow daily themes to create cohesive, well-planned days
+6. Valid JSON only - no explanations, markdown, or extra text
 
-Remember: This is a premium meal planning service. Deliver exceptional, varied, personalized culinary experiences that wow the family every single day.`;
+COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the meals array.`;
 
   try {
     const groqClient = getGroqClient();
@@ -427,7 +430,7 @@ Remember: This is a premium meal planning service. Deliver exceptional, varied, 
       messages: [
         {
           role: "system",
-          content: `Generate EXACTLY ${totalMeals} meals for all ${totalDays} days. Do not truncate. Full JSON only. No explanations.`,
+          content: `You are a professional meal planner. Generate EXACTLY ${totalMeals} complete meals for ${totalDays} days. Each day must have these EXACT meal types in order: ${parameters.mealsPerDay.join(", ")}. Total meals to generate: ${totalMeals}. Output ONLY valid JSON with all ${totalMeals} meal objects in the correct sequence. Do not skip any meals or substitute meal types.`,
         },
         {
           role: "user",
@@ -435,8 +438,8 @@ Remember: This is a premium meal planning service. Deliver exceptional, varied, 
         },
       ],
       model: "openai/gpt-oss-120b",
-      temperature: 0.7,
-      max_tokens: 16000,
+      temperature: 0.5,
+      max_tokens: 32000,
       response_format: { type: "json_object" },
     });
 
@@ -454,65 +457,35 @@ Remember: This is a premium meal planning service. Deliver exceptional, varied, 
     if (mealPlan.meals) {
       mealPlan.meals = mealPlan.meals.map(fixMealStructure);
       
-      // Enhanced duplicate detection and redistribution for variety
-      const seenCombinations = new Map<string, any>();
+      // Check for exact duplicates only (same day + meal type)
+      const seenSlots = new Map<string, any>();
       const uniqueMeals: any[] = [];
       
       for (const meal of mealPlan.meals) {
-        const key = `${meal.day}-${meal.mealType}-${meal.recipeName.toLowerCase()}`;
-        if (!seenCombinations.has(key)) {
-          seenCombinations.set(key, meal);
+        const slotKey = `${meal.day}-${meal.mealType}`;
+        if (!seenSlots.has(slotKey)) {
+          seenSlots.set(slotKey, meal);
           uniqueMeals.push(meal);
         } else {
-          console.warn(`Duplicate meal found for ${key}, removing duplicate`);
+          console.warn(`Duplicate slot detected for Day ${meal.day} ${meal.mealType}, keeping first occurrence`);
         }
       }
       
       const mealsPerDay = parameters.mealsPerDay.length;
       const expectedMeals = totalDays * mealsPerDay;
       
-      const daysMissing: number[] = [];
-      for (let day = 1; day <= totalDays; day++) {
-        const mealsForDay = uniqueMeals.filter(m => m.day === day).length;
-        if (mealsForDay < mealsPerDay) {
-          daysMissing.push(day);
-          console.warn(`Day ${day} is missing meals (has ${mealsForDay}, needs ${mealsPerDay})`);
+      // Validate we have the exact count needed
+      if (uniqueMeals.length !== expectedMeals) {
+        console.warn(`AI generated ${uniqueMeals.length} meals but expected ${expectedMeals}. This indicates the AI truncated the response.`);
+        
+        // Only throw error if we're significantly short (missing more than 2 meals)
+        if (uniqueMeals.length < expectedMeals - 2) {
+          throw new Error(`Incomplete meal plan: AI only generated ${uniqueMeals.length} out of ${expectedMeals} required meals. The response was likely truncated. Try reducing the plan duration or meal types.`);
         }
       }
       
-      if (daysMissing.length > 0 || uniqueMeals.length < expectedMeals) {
-        console.warn(`Redistributing and enhancing meals to cover all ${totalDays} days with variety`);
-        
-        const organizedMeals: any[] = [];
-        let mealIndex = 0;
-        
-        for (let day = 1; day <= totalDays; day++) {
-          for (const mealType of parameters.mealsPerDay) {
-            if (mealIndex < uniqueMeals.length) {
-              const baseMeal = { ...uniqueMeals[mealIndex] };
-              // Ensure variety by modifying if needed
-              baseMeal.day = day;
-              baseMeal.mealType = mealType;
-              const startDate = new Date();
-              startDate.setDate(startDate.getDate() + (day - 1));
-              baseMeal.date = startDate.toISOString().split('T')[0];
-              organizedMeals.push(baseMeal);
-              mealIndex++;
-            } else {
-              // Fallback: create a placeholder or regenerate logic if needed
-              console.warn(`Generating fallback for Day ${day} ${mealType}`);
-              // In production, could trigger partial regeneration
-            }
-          }
-        }
-        
-        mealPlan.meals = organizedMeals.slice(0, expectedMeals);
-        console.log(`Ensured ${organizedMeals.length} varied meals across ${totalDays} days`);
-      } else {
-        mealPlan.meals = uniqueMeals;
-      }
-      
-      console.log(`Generated ${mealPlan.meals.length} unique meals (expected: ${expectedMeals})`);
+      mealPlan.meals = uniqueMeals;
+      console.log(`Final meal plan: ${mealPlan.meals.length} unique meals for ${totalDays} days (expected: ${expectedMeals})`);
     }
     
     return mealPlan;

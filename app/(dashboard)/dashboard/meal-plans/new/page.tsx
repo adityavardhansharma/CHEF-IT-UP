@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { CuisineSelector } from "@/components/ui/cuisine-selector";
 import { Loader2, X, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -30,7 +31,7 @@ export default function NewMealPlanPage() {
   const [familySize, setFamilySize] = useState("2");
   const [mealsPerDay, setMealsPerDay] = useState<string[]>(["breakfast", "lunch", "dinner"]);
   const [dietType, setDietType] = useState("balanced");
-  const [cuisinePreference, setCuisinePreference] = useState("");
+  const [cuisinePreferences, setCuisinePreferences] = useState<string[]>([]);
   const [negativeIngredients, setNegativeIngredients] = useState<string[]>([]);
   const [newNegativeIngredient, setNewNegativeIngredient] = useState("");
   const [assumeBasicStaples, setAssumeBasicStaples] = useState(true);
@@ -55,19 +56,6 @@ export default function NewMealPlanPage() {
     "Gluten-Free",
     "Dairy-Free",
     "Low-Sodium",
-  ];
-
-  const cuisines = [
-    "Italian",
-    "Indian",
-    "Chinese",
-    "Mexican",
-    "Japanese",
-    "Thai",
-    "Mediterranean",
-    "American",
-    "French",
-    "Korean",
   ];
 
   const mealTypes = [
@@ -119,7 +107,7 @@ export default function NewMealPlanPage() {
           familySize: parseInt(familySize),
           mealsPerDay,
           dietType,
-          cuisinePreference,
+          cuisinePreferences,
           negativeIngredients,
           assumeBasicStaples,
           customInstructions: customInstructions.trim() || undefined,
@@ -144,7 +132,7 @@ export default function NewMealPlanPage() {
           familySize: parseInt(familySize),
           mealsPerDay,
           dietType,
-          cuisinePreference,
+          cuisinePreferences,
           negativeIngredients,
           duration: parseInt(duration),
           durationUnit,
@@ -336,22 +324,10 @@ export default function NewMealPlanPage() {
               </select>
             </div>
 
-            <div>
-              <Label htmlFor="cuisinePreference">Cuisine Preference (Optional)</Label>
-              <select
-                id="cuisinePreference"
-                value={cuisinePreference}
-                onChange={(e) => setCuisinePreference(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              >
-                <option value="">Any Cuisine</option>
-                {cuisines.map((cuisine) => (
-                  <option key={cuisine.toLowerCase()} value={cuisine.toLowerCase()}>
-                    {cuisine}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <CuisineSelector
+              value={cuisinePreferences}
+              onChange={setCuisinePreferences}
+            />
 
             <div>
               <Label htmlFor="customInstructions">Custom Instructions (Optional)</Label>
@@ -462,10 +438,16 @@ export default function NewMealPlanPage() {
               </div>
             </div>
 
-            {cuisinePreference && (
+            {cuisinePreferences.length > 0 && (
               <div>
-                <Label className="text-xs text-gray-500">Cuisine Preference</Label>
-                <p className="font-medium capitalize">{cuisinePreference}</p>
+                <Label className="text-xs text-gray-500">Selected Cuisines</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {cuisinePreferences.map((cuisine) => (
+                    <Badge key={cuisine} variant="secondary" className="capitalize">
+                      {cuisine}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
 

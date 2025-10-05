@@ -97,7 +97,8 @@ export const createMealPlan = mutation({
       familySize: v.number(),
       mealsPerDay: v.array(v.string()),
       dietType: v.string(),
-      cuisinePreference: v.optional(v.string()),
+      cuisinePreferences: v.optional(v.array(v.string())), // Optional array
+      cuisinePreference: v.optional(v.string()), // Backward compatibility
       negativeIngredients: v.array(v.string()),
       assumeBasicStaples: v.optional(v.boolean()),
       customInstructions: v.optional(v.string()),
@@ -114,12 +115,25 @@ export const createMealPlan = mutation({
 
     if (!user) throw new Error("User not found");
 
+    // Convert old cuisinePreference to new cuisinePreferences format for backward compatibility
+    const processedParameters = { ...args.parameters };
+
+    if (args.parameters.cuisinePreference && !args.parameters.cuisinePreferences) {
+      // Convert single cuisine to array format
+      processedParameters.cuisinePreferences = args.parameters.cuisinePreference
+        ? [args.parameters.cuisinePreference]
+        : [];
+    } else if (!args.parameters.cuisinePreferences) {
+      // Ensure empty array if neither field is provided
+      processedParameters.cuisinePreferences = [];
+    }
+
     const mealPlanId = await ctx.db.insert("mealPlans", {
       userId: user._id,
       startDate: args.startDate,
       duration: args.duration,
       durationUnit: args.durationUnit,
-      parameters: args.parameters,
+      parameters: processedParameters,
       status: "active",
       createdAt: Date.now(),
     });

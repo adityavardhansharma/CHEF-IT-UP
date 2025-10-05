@@ -55,7 +55,8 @@ export default defineSchema({
       familySize: v.number(),
       mealsPerDay: v.array(v.string()),
       dietType: v.string(),
-      cuisinePreference: v.optional(v.string()),
+      cuisinePreferences: v.optional(v.array(v.string())), // Optional array for multiple cuisines
+      cuisinePreference: v.optional(v.string()), // Backward compatibility for old data
       negativeIngredients: v.array(v.string()),
       assumeBasicStaples: v.optional(v.boolean()),
       customInstructions: v.optional(v.string()), // Custom instructions for the meal plan

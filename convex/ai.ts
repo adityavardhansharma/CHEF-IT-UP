@@ -26,7 +26,8 @@ export const generateMealPlanAction = action({
       familySize: v.number(),
       mealsPerDay: v.array(v.string()),
       dietType: v.string(),
-      cuisinePreference: v.optional(v.string()),
+      cuisinePreferences: v.optional(v.array(v.string())), // Optional array
+      cuisinePreference: v.optional(v.string()), // Backward compatibility
       negativeIngredients: v.array(v.string()),
       duration: v.number(),
       durationUnit: v.string(),
@@ -37,108 +38,79 @@ export const generateMealPlanAction = action({
   handler: async (ctx, args) => {
     // Import Groq dynamically to avoid client-side issues
     const { generateMealPlan } = await import("../lib/groq");
-    
+
     try {
+      // Convert old cuisinePreference to new cuisinePreferences format for backward compatibility
+      const processedParameters = { ...args.parameters };
+
+      if (args.parameters.cuisinePreference && !args.parameters.cuisinePreferences) {
+        // Convert single cuisine to array format
+        processedParameters.cuisinePreferences = args.parameters.cuisinePreference
+          ? [args.parameters.cuisinePreference]
+          : [];
+      } else if (!args.parameters.cuisinePreferences) {
+        // Ensure empty array if neither field is provided
+        processedParameters.cuisinePreferences = [];
+      }
       const result = await generateMealPlan(
         args.userProfile,
         args.pantryItems,
-        args.parameters
+        processedParameters
       );
       
       if (!result || !result.meals) {
         throw new Error("No meals generated");
       }
 
-      // Enforce exact schedule grid using startDate and requested meal types
+      // Format dates properly and validate meal structure
       const totalDays = args.parameters.duration * (args.parameters.durationUnit === "weeks" ? 7 : 1);
-      const mealTypes = Array.from(new Set(args.parameters.mealsPerDay.map((m) => m.toLowerCase().trim())));
-
-      // Normalize pools by type
-      const typePools: Record<string, any[]> = {};
-      for (const t of mealTypes) typePools[t] = [];
-
-      const extraPool: any[] = [];
-      for (const m of result.meals) {
-        const type = String(m.mealType || "").toLowerCase().trim();
-        if (mealTypes.includes(type)) {
-          typePools[type].push(m);
-        } else {
-          extraPool.push(m);
-        }
-      }
+      const expectedMealTypes = args.parameters.mealsPerDay.map((m) => m.toLowerCase().trim());
 
       // Helper to format date as YYYY-MM-DD without TZ issues
       const formatDate = (d: Date) => {
-        // Force UTC to avoid TZ drift between server and client
         const y = d.getUTCFullYear();
         const m = String(d.getUTCMonth() + 1).padStart(2, "0");
         const day = String(d.getUTCDate()).padStart(2, "0");
         return `${y}-${m}-${day}`;
       };
 
-      // Treat startDate as UTC date at midnight to keep dates aligned in all regions
+      // Treat startDate as UTC date at midnight
       const base = new Date(`${args.startDate}T00:00:00.000Z`);
 
-      // Flatten all meals to use as fallback when a type pool is empty
-      const flatPool: any[] = [
-        ...mealTypes.flatMap((t) => typePools[t]),
-        ...extraPool,
-      ];
+      // Process meals: update dates and validate structure
+      const processedMeals: any[] = [];
+      const seenSlots = new Set<string>();
 
-      // Dedup within pools by (day, type) to avoid repeats
-      const seen = new Set<string>();
-      const dedup = (arr: any[]) => arr.filter((m) => {
-        const key = `${String(m.day)}-${String(m.mealType).toLowerCase()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      for (const t of mealTypes) typePools[t] = dedup(typePools[t]);
+      for (const meal of result.meals) {
+        // Normalize meal type for comparison
+        const mealType = String(meal.mealType || "").toLowerCase().trim();
+        const day = meal.day;
+        const slotKey = `${day}-${mealType}`;
 
-      const scheduled: any[] = [];
-
-      // Pull next meal for a type, or fallback to another type/any
-      const pullMeal = (type: string): any | null => {
-        if (typePools[type] && typePools[type].length) return typePools[type].shift();
-        for (const t of mealTypes) {
-          if (typePools[t].length) return typePools[t].shift();
+        // Skip duplicates
+        if (seenSlots.has(slotKey)) {
+          console.warn(`[AI] Duplicate slot detected: ${slotKey}, skipping`);
+          continue;
         }
-        if (flatPool.length) return flatPool.shift();
-        return null;
-      };
 
-      for (let d = 1; d <= totalDays; d++) {
-        for (const t of mealTypes) {
-          const chosen = pullMeal(t);
-          if (!chosen) continue;
+        // Calculate date for this day
+        const date = new Date(base);
+        date.setUTCDate(base.getUTCDate() + (day - 1));
 
-          const date = new Date(base);
-          date.setUTCDate(base.getUTCDate() + (d - 1));
+        processedMeals.push({
+          ...meal,
+          day,
+          mealType,
+          date: formatDate(date),
+        });
 
-          scheduled.push({
-            ...chosen,
-            day: d,
-            mealType: t,
-            date: formatDate(date),
-          });
-        }
+        seenSlots.add(slotKey);
       }
 
-      // Final guard: keep first by (day, type) and clip to expected count
-      const comboSeen = new Set<string>();
-      const finalMeals: any[] = [];
-      for (const m of scheduled) {
-        const key = `${m.day}-${m.mealType}`;
-        if (!comboSeen.has(key)) {
-          comboSeen.add(key);
-          finalMeals.push(m);
-        }
-      }
+      result.meals = processedMeals;
 
-      const expectedCount = totalDays * mealTypes.length;
-      result.meals = finalMeals.slice(0, expectedCount);
-
-      console.log(`[AI] Scheduled ${result.meals.length} meals (expected: ${expectedCount}) over ${totalDays} days with types: ${mealTypes.join(", ")}`);
+      const expectedCount = totalDays * expectedMealTypes.length;
+      console.log(`[AI] Processed ${result.meals.length} meals (expected: ${expectedCount}) over ${totalDays} days with meal types: ${expectedMealTypes.join(", ")}`);
       
       return result;
     } catch (error: any) {
