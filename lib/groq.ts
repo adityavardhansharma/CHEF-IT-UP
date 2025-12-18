@@ -572,6 +572,7 @@ CRITICAL FORMATTING:
 Deliver a recipe that feels custom-crafted for this family on this exact day.`;
 
   try {
+    // Use Cerebras for meal regeneration
     const cerebrasClient = getCerebrasClient();
     const stream = await cerebrasClient.chat.completions.create({
       messages: [
@@ -586,11 +587,13 @@ Deliver a recipe that feels custom-crafted for this family on this exact day.`;
       ],
       model: "gpt-oss-120b",
       stream: true,
-      max_completion_tokens: 65536,
+      max_completion_tokens: 32768,
       temperature: 0.3,
       top_p: 0.8,
+      reasoning_effort: "medium",
     });
 
+    // Collect streamed response
     let content = "";
     for await (const chunk of stream) {
       content += (chunk as any).choices[0]?.delta?.content || '';
