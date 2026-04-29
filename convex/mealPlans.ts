@@ -170,6 +170,7 @@ export const addMealToPlan = mutation({
       fat: v.float64(),
       fiber: v.optional(v.float64()),
       sodium: v.optional(v.float64()),
+      sugar: v.optional(v.float64()),
     }),
     portionSize: v.number(),
   },
@@ -520,6 +521,7 @@ export const updateMealRecipe = mutation({
       fat: v.number(),
       fiber: v.optional(v.number()),
       sodium: v.optional(v.number()),
+      sugar: v.optional(v.number()),
     }),
   },
   handler: async (ctx, args) => {
