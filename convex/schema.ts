@@ -95,6 +95,7 @@ export default defineSchema({
       fat: v.number(),
       fiber: v.optional(v.number()),
       sodium: v.optional(v.number()),
+      sugar: v.optional(v.number()),
     }),
     portionSize: v.number(),
     consumed: v.boolean(),

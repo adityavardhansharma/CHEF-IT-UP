@@ -116,17 +116,16 @@ function fixMealStructure(meal: any): any {
     });
   }
 
-  // Ensure nutritionalInfo exists
-  if (!meal.nutritionalInfo) {
-    meal.nutritionalInfo = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sodium: 0,
-    };
-  }
+  const nutritionalInfo = meal.nutritionalInfo || {};
+  meal.nutritionalInfo = {
+    calories: Number(nutritionalInfo.calories) || 0,
+    protein: Number(nutritionalInfo.protein) || 0,
+    carbs: Number(nutritionalInfo.carbs) || 0,
+    fat: Number(nutritionalInfo.fat) || 0,
+    fiber: Number(nutritionalInfo.fiber) || 0,
+    sodium: Number(nutritionalInfo.sodium) || 0,
+    sugar: Number(nutritionalInfo.sugar) || 0,
+  };
 
   return meal;
 }
@@ -409,7 +408,8 @@ ${parameters.mealsPerDay.map((mealType, idx) => `    {
         "carbs": 25,
         "fat": 22,
         "fiber": 3,
-        "sodium": 280
+        "sodium": 280,
+        "sugar": 6
       },
       "portionSize": ${parameters.familySize}
     }${idx < parameters.mealsPerDay.length - 1 ? ',' : ''}`).join('\n')}
@@ -423,9 +423,10 @@ MANDATORY OUTPUT RULES:
 1. Generate ALL ${totalMeals} meals in strict sequential order - do NOT skip any
 2. Each day MUST have exactly ${parameters.mealsPerDay.length} meals (${mealTypesList})
 3. NO duplicate recipes across the entire plan
-4. All numbers must be digits (30, 2.5) - NO text words
-5. Follow daily themes to create cohesive, well-planned days
-6. Valid JSON only - no explanations, markdown, or extra text
+4. nutritionalInfo must contain ONLY these fields: calories, protein, carbs, fat, fiber, sodium, sugar
+5. All numbers must be digits (30, 2.5) - NO text words
+6. Follow daily themes to create cohesive, well-planned days
+7. Valid JSON only - no explanations, markdown, or extra text
 
 COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the meals array.`;
 
@@ -588,15 +589,16 @@ OUTPUT - PURE JSON ONLY:
     "carbs": 55,
     "fat": 18,
     "fiber": 8,
-    "sodium": 650
-    // Accurate estimates per person - all as numbers
+    "sodium": 650,
+    "sugar": 12
+    // Accurate estimates per person - all as numbers; no extra nutrition fields
   }
 }
 
 CRITICAL FORMATTING:
 - Ingredients: ALWAYS {"name": "...", "quantity": number, "unit": "string"} - NO variations, quantity as number
 - Instructions: Numbered, practical, complete
-- Nutrition: Realistic per-person values for ${dietType} - ALL NUMBERS (e.g., 450, 25g as 25)
+- Nutrition: Realistic per-person values for ${dietType} - ONLY calories, protein, carbs, fat, fiber, sodium, sugar; all as numbers (e.g., 450, 25g as 25)
 - JSON: Valid, complete, no extra text. NO WORDS IN NUMERIC FIELDS.
 
 Deliver a recipe that feels custom-crafted for this family on this exact day.`;
