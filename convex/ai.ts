@@ -52,6 +52,7 @@ export const generateMealPlanAction = action({
         // Ensure empty array if neither field is provided
         processedParameters.cuisinePreferences = [];
       }
+      console.log(`[AI] generateMealPlanAction starting: duration=${args.parameters.duration} ${args.parameters.durationUnit}, mealTypes=${args.parameters.mealsPerDay.join(", ")}, pantryItems=${args.pantryItems.length}`);
       const result = await generateMealPlan(
         args.userProfile,
         args.pantryItems,
@@ -112,6 +113,7 @@ export const generateMealPlanAction = action({
       const expectedCount = totalDays * expectedMealTypes.length;
       console.log(`[AI] Processed ${result.meals.length} meals (expected: ${expectedCount}) over ${totalDays} days with meal types: ${expectedMealTypes.join(", ")}`);
       
+      console.log(`[AI] generateMealPlanAction completed: meals=${result.meals.length}`);
       return result;
     } catch (error: any) {
       console.error("Error generating meal plan:", error);
@@ -150,6 +152,7 @@ export const regenerateMealAction = action({
     const { regenerateMeal } = await import("../lib/groq");
     
     try {
+      console.log(`[AI] regenerateMealAction starting: mealType=${args.mealType}, pantryItems=${args.pantryItems.length}, customRequest=${Boolean(args.customRequest)}`);
       const meal = await regenerateMeal(
         args.userProfile,
         args.pantryItems,
@@ -160,6 +163,7 @@ export const regenerateMealAction = action({
         args.customRequest
       );
       
+      console.log(`[AI] regenerateMealAction completed: recipe=${meal.recipeName || "unknown"}`);
       return meal;
     } catch (error: any) {
       console.error("Error regenerating meal:", error);
