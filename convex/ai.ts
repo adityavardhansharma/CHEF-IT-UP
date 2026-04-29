@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 
 /**
- * Server-side action to generate meal plans using Groq AI
+ * Server-side action to generate meal plans using Cerebras AI
  * This runs on the server where environment variables are accessible
  */
 export const generateMealPlanAction = action({
@@ -36,7 +36,7 @@ export const generateMealPlanAction = action({
     }),
   },
   handler: async (ctx, args) => {
-    // Import Groq dynamically to avoid client-side issues
+    // Import AI generation dynamically to avoid client-side issues
     const { generateMealPlan } = await import("../lib/groq");
 
     try {
@@ -121,7 +121,7 @@ export const generateMealPlanAction = action({
 });
 
 /**
- * Server-side action to regenerate a single meal using Groq AI
+ * Server-side action to regenerate a single meal using Cerebras AI
  */
 export const regenerateMealAction = action({
   args: {
