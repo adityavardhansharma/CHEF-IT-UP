@@ -1,20 +1,20 @@
- import Groq from "groq-sdk";
+// import Groq from "groq-sdk";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
 
-// Initialize Groq lazily to avoid client-side instantiation errors
-let groq: Groq | null = null;
-
-function getGroqClient() {
-  if (!groq) {
-    if (!process.env.GROQ_API_KEY) {
-      throw new Error("GROQ_API_KEY is not set in environment variables");
-    }
-    groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    });
-  }
-  return groq;
-}
+// Legacy Groq setup kept for reference; Cerebras now handles all AI generation.
+// let groq: Groq | null = null;
+//
+// function getGroqClient() {
+//   if (!groq) {
+//     if (!process.env.GROQ_API_KEY) {
+//       throw new Error("GROQ_API_KEY is not set in environment variables");
+//     }
+//     groq = new Groq({
+//       apiKey: process.env.GROQ_API_KEY,
+//     });
+//   }
+//   return groq;
+// }
 
 // Initialize Cerebras lazily to avoid client-side instantiation errors
 let cerebras: Cerebras | null = null;
@@ -425,8 +425,8 @@ MANDATORY OUTPUT RULES:
 COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the meals array.`;
 
   try {
-    const groqClient = getGroqClient();
-    const completion = await groqClient.chat.completions.create({
+    const cerebrasClient = getCerebrasClient();
+    const stream = await cerebrasClient.chat.completions.create({
       messages: [
         {
           role: "system",
@@ -437,13 +437,38 @@ COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the 
           content: prompt,
         },
       ],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      temperature: 0.5,
-      max_tokens: 32000,
-      response_format: { type: "json_object" },
+      model: "zai-glm-4.7",
+      stream: true,
+      max_completion_tokens: 65000,
+      temperature: 0.3,
+      top_p: 0.8,
     });
 
-    const content = completion.choices[0]?.message?.content;
+    // Previous Groq call kept for reference while Cerebras handles all AI generation.
+    // const groqClient = getGroqClient();
+    // const completion = await groqClient.chat.completions.create({
+    //   messages: [
+    //     {
+    //       role: "system",
+    //       content: `You are a professional meal planner. Generate EXACTLY ${totalMeals} complete meals for ${totalDays} days. Each day must have these EXACT meal types in order: ${parameters.mealsPerDay.join(", ")}. Total meals to generate: ${totalMeals}. Output ONLY valid JSON with all ${totalMeals} meal objects in the correct sequence. Do not skip any meals or substitute meal types.`,
+    //     },
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    //   model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    //   temperature: 0.5,
+    //   max_tokens: 32000,
+    //   response_format: { type: "json_object" },
+    // });
+    // const content = completion.choices[0]?.message?.content;
+
+    let content = "";
+    for await (const chunk of stream) {
+      content += (chunk as any).choices[0]?.delta?.content || '';
+    }
+
     if (!content) {
       throw new Error("No response from AI");
     }
