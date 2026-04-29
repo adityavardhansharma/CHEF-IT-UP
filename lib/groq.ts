@@ -585,12 +585,11 @@ Deliver a recipe that feels custom-crafted for this family on this exact day.`;
           content: enhancedPrompt,
         },
       ],
-      model: "gpt-oss-120b",
+      model: "zai-glm-4.7",
       stream: true,
-      max_completion_tokens: 32768,
+      max_completion_tokens: 65000,
       temperature: 0.3,
       top_p: 0.8,
-      reasoning_effort: "medium",
     });
 
     // Collect streamed response
