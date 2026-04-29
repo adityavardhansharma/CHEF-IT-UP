@@ -1,5 +1,6 @@
 // import Groq from "groq-sdk";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
+import { OpenRouter } from "@openrouter/sdk";
 
 // Legacy Groq setup kept for reference; Cerebras now handles all AI generation.
 // let groq: Groq | null = null;
@@ -20,6 +21,8 @@ const CEREBRAS_MODEL = "qwen-3-235b-a22b-instruct-2507";
 const CEREBRAS_MAX_COMPLETION_TOKENS = 65000;
 const CEREBRAS_TEMPERATURE = 1;
 const CEREBRAS_TOP_P = 0.95;
+const OPENROUTER_CEREBRAS_MODEL = "openai/gpt-oss-120b";
+const OPENROUTER_CEREBRAS_PROVIDER = "Cerebras";
 
 // Initialize Cerebras lazily to avoid client-side instantiation errors
 let cerebras: Cerebras | null = null;
@@ -34,6 +37,98 @@ function getCerebrasClient() {
     });
   }
   return cerebras;
+}
+
+let openrouter: OpenRouter | null = null;
+
+function getOpenRouterClient() {
+  if (!openrouter) {
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY is not set in environment variables");
+    }
+    openrouter = new OpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      appTitle: "AI Chef Meal Planner",
+    });
+  }
+  return openrouter;
+}
+
+function summarizeAIError(error: unknown) {
+  const err = error as any;
+  return {
+    name: err?.name,
+    status: err?.status,
+    message: err?.message || String(error),
+  };
+}
+
+async function collectDirectCerebrasStream(messages: Array<{ role: string; content: string }>) {
+  console.log(`[AI] Direct Cerebras request starting: model=${CEREBRAS_MODEL}`);
+  const cerebrasClient = getCerebrasClient();
+  const stream = await cerebrasClient.chat.completions.create({
+    messages: messages as any,
+    model: CEREBRAS_MODEL,
+    stream: true,
+    max_completion_tokens: CEREBRAS_MAX_COMPLETION_TOKENS,
+    temperature: CEREBRAS_TEMPERATURE,
+    top_p: CEREBRAS_TOP_P,
+  });
+
+  let content = "";
+  for await (const chunk of stream) {
+    content += (chunk as any).choices[0]?.delta?.content || "";
+  }
+
+  console.log(`[AI] Direct Cerebras request completed: chars=${content.length}`);
+  return content;
+}
+
+async function collectOpenRouterCerebrasStream(messages: Array<{ role: string; content: string }>) {
+  console.log(`[AI] OpenRouter Cerebras fallback starting: model=${OPENROUTER_CEREBRAS_MODEL}, provider=${OPENROUTER_CEREBRAS_PROVIDER}`);
+  const openrouterClient = getOpenRouterClient();
+  const stream = await openrouterClient.chat.send({
+    chatRequest: {
+      model: OPENROUTER_CEREBRAS_MODEL,
+      messages: messages as any,
+      stream: true,
+      maxCompletionTokens: CEREBRAS_MAX_COMPLETION_TOKENS,
+      temperature: CEREBRAS_TEMPERATURE,
+      topP: CEREBRAS_TOP_P,
+      provider: {
+        only: [OPENROUTER_CEREBRAS_PROVIDER],
+        allowFallbacks: false,
+      },
+    },
+  });
+
+  let content = "";
+  for await (const chunk of stream as any) {
+    content += chunk.choices?.[0]?.delta?.content || "";
+    if (chunk.usage) {
+      console.log(`[AI] OpenRouter Cerebras fallback usage: ${JSON.stringify(chunk.usage)}`);
+    }
+  }
+
+  console.log(`[AI] OpenRouter Cerebras fallback completed: chars=${content.length}`);
+  return content;
+}
+
+async function generateWithCerebrasFallback(
+  operation: "meal_plan" | "meal_regeneration",
+  messages: Array<{ role: string; content: string }>
+) {
+  try {
+    return await collectDirectCerebrasStream(messages);
+  } catch (directError) {
+    console.warn(`[AI] Direct Cerebras ${operation} failed; attempting OpenRouter Cerebras fallback`, summarizeAIError(directError));
+    try {
+      return await collectOpenRouterCerebrasStream(messages);
+    } catch (fallbackError) {
+      console.error(`[AI] OpenRouter Cerebras fallback for ${operation} failed`, summarizeAIError(fallbackError));
+      throw fallbackError;
+    }
+  }
 }
 
 export interface MealPlanParameters {
@@ -430,26 +525,18 @@ MANDATORY OUTPUT RULES:
 
 COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the meals array.`;
 
-  try {
-    const cerebrasClient = getCerebrasClient();
-    const stream = await cerebrasClient.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional meal planner. Generate EXACTLY ${totalMeals} complete meals for ${totalDays} days. Each day must have these EXACT meal types in order: ${parameters.mealsPerDay.join(", ")}. Total meals to generate: ${totalMeals}. Output ONLY valid JSON with all ${totalMeals} meal objects in the correct sequence. Do not skip any meals or substitute meal types.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      model: CEREBRAS_MODEL,
-      stream: true,
-      max_completion_tokens: CEREBRAS_MAX_COMPLETION_TOKENS,
-      temperature: CEREBRAS_TEMPERATURE,
-      top_p: CEREBRAS_TOP_P,
-    });
+  const messages = [
+    {
+      role: "system",
+      content: `You are a professional meal planner. Generate EXACTLY ${totalMeals} complete meals for ${totalDays} days. Each day must have these EXACT meal types in order: ${parameters.mealsPerDay.join(", ")}. Total meals to generate: ${totalMeals}. Output ONLY valid JSON with all ${totalMeals} meal objects in the correct sequence. Do not skip any meals or substitute meal types.`,
+    },
+    {
+      role: "user",
+      content: prompt,
+    },
+  ];
 
+  try {
     // Previous Groq call kept for reference while Cerebras handles all AI generation.
     // const groqClient = getGroqClient();
     // const completion = await groqClient.chat.completions.create({
@@ -470,10 +557,7 @@ COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the 
     // });
     // const content = completion.choices[0]?.message?.content;
 
-    let content = "";
-    for await (const chunk of stream) {
-      content += (chunk as any).choices[0]?.delta?.content || '';
-    }
+    const content = await generateWithCerebrasFallback("meal_plan", messages);
 
     if (!content) {
       throw new Error("No response from AI");
@@ -603,32 +687,19 @@ CRITICAL FORMATTING:
 
 Deliver a recipe that feels custom-crafted for this family on this exact day.`;
 
-  try {
-    // Use Cerebras for meal regeneration
-    const cerebrasClient = getCerebrasClient();
-    const stream = await cerebrasClient.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a virtuoso chef delivering bespoke recipes. Output ONLY valid JSON. No explanations, no thinking aloud - pure structured response adhering to the exact schema provided. CRITICAL: All quantities, times, nutrition must be numeric values (123, 4.5) - NEVER words like "thirty" or "two". Ensure all JSON is valid with proper commas, quotes, and brackets.`,
-        },
-        {
-          role: "user",
-          content: enhancedPrompt,
-        },
-      ],
-      model: CEREBRAS_MODEL,
-      stream: true,
-      max_completion_tokens: CEREBRAS_MAX_COMPLETION_TOKENS,
-      temperature: CEREBRAS_TEMPERATURE,
-      top_p: CEREBRAS_TOP_P,
-    });
+  const messages = [
+    {
+      role: "system",
+      content: `You are a virtuoso chef delivering bespoke recipes. Output ONLY valid JSON. No explanations, no thinking aloud - pure structured response adhering to the exact schema provided. CRITICAL: All quantities, times, nutrition must be numeric values (123, 4.5) - NEVER words like "thirty" or "two". Ensure all JSON is valid with proper commas, quotes, and brackets.`,
+    },
+    {
+      role: "user",
+      content: enhancedPrompt,
+    },
+  ];
 
-    // Collect streamed response
-    let content = "";
-    for await (const chunk of stream) {
-      content += (chunk as any).choices[0]?.delta?.content || '';
-    }
+  try {
+    const content = await generateWithCerebrasFallback("meal_regeneration", messages);
 
     if (!content || !content.trim()) {
       throw new Error("No response from AI");
