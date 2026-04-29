@@ -16,6 +16,11 @@ import Cerebras from "@cerebras/cerebras_cloud_sdk";
 //   return groq;
 // }
 
+const CEREBRAS_MODEL = "qwen-3-235b-a22b-instruct-2507";
+const CEREBRAS_MAX_COMPLETION_TOKENS = 65000;
+const CEREBRAS_TEMPERATURE = 1;
+const CEREBRAS_TOP_P = 0.95;
+
 // Initialize Cerebras lazily to avoid client-side instantiation errors
 let cerebras: Cerebras | null = null;
 
@@ -437,11 +442,11 @@ COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the 
           content: prompt,
         },
       ],
-      model: "zai-glm-4.7",
+      model: CEREBRAS_MODEL,
       stream: true,
-      max_completion_tokens: 65000,
-      temperature: 0.3,
-      top_p: 0.8,
+      max_completion_tokens: CEREBRAS_MAX_COMPLETION_TOKENS,
+      temperature: CEREBRAS_TEMPERATURE,
+      top_p: CEREBRAS_TOP_P,
     });
 
     // Previous Groq call kept for reference while Cerebras handles all AI generation.
@@ -610,11 +615,11 @@ Deliver a recipe that feels custom-crafted for this family on this exact day.`;
           content: enhancedPrompt,
         },
       ],
-      model: "zai-glm-4.7",
+      model: CEREBRAS_MODEL,
       stream: true,
-      max_completion_tokens: 65000,
-      temperature: 0.3,
-      top_p: 0.8,
+      max_completion_tokens: CEREBRAS_MAX_COMPLETION_TOKENS,
+      temperature: CEREBRAS_TEMPERATURE,
+      top_p: CEREBRAS_TOP_P,
     });
 
     // Collect streamed response
