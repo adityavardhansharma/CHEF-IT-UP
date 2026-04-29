@@ -437,7 +437,7 @@ COUNT CHECK: Your output must contain exactly ${totalMeals} meal objects in the 
           content: prompt,
         },
       ],
-      model: "openai/gpt-oss-120b",
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
       temperature: 0.5,
       max_tokens: 32000,
       response_format: { type: "json_object" },
