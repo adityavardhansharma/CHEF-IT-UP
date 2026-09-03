@@ -66,3 +66,270 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Orchid & Mascofast Signature Visual Engine */
+.mascofast-grade {
+  filter: contrast(1.18) saturate(1.25);
+}
+
+/* True CineStill 800T Halation & Rainbow Prism Bloom */
+.prism-halation {
+  position: relative;
+}
+.prism-halation::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(255, 75, 0, 0.45) 0%, rgba(255, 170, 0, 0.25) 30%, transparent 65%),
+    radial-gradient(circle at 15% 85%, rgba(0, 230, 255, 0.35) 0%, rgba(0, 100, 255, 0.15) 40%, transparent 70%),
+    radial-gradient(circle at 50% 50%, rgba(255, 230, 150, 0.12) 0%, transparent 60%);
+  mix-blend-mode: screen;
+}
+
+/* Chromatic Edge Fringe (RGB channel split illusion) */
+.chromatic-edge {
+  box-shadow: -2px 0 0 rgba(255, 40, 0, 0.4), 2px 0 0 rgba(0, 220, 255, 0.4);
+}
+
+.risograph-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+.canvas-weave {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 0);
+  background-size: 8px 8px;
+}
+
+/* Scrapbook Physical Photo Matting (Maple style) */
+.scrapbook-card {
+  background: #fdfbf7;
+  padding: 10px 10px 18px 10px;
+  border-radius: 2px;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+.scrapbook-card:hover {
+  box-shadow: 0 24px 48px -10px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Translucent Frosted Washi Tape */
+.washi-tape {
+  position: absolute;
+  height: 22px;
+  width: 72px;
+  background: rgba(255, 252, 240, 0.62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), inset 0 0 2px rgba(255, 255, 255, 0.8);
+  border-left: 1px dashed rgba(0, 0, 0, 0.15);
+  border-right: 1px dashed rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* Monumint Folio Page Spread Aesthetics */
+.folio-page {
+  background: #0d111a;
+  border: 1px solid rgba(245, 243, 236, 0.12);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.folio-hairline {
+  border-color: rgba(245, 243, 236, 0.12);
+}
+
+.folio-stamp {
+  border: 1px solid rgba(245, 243, 236, 0.25);
+  background: rgba(245, 243, 236, 0.04);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   GRAND TOUR — PAPER & FILM SYSTEM
+   Paper: warm map-page editorial. Film: 2003 camcorder dusk —
+   navy duotone shadows, ember halation, lifted blacks, grain.
+   Rule: scenery is the blurry dream, food is the sharp souvenir.
+   ============================================================ */
+
+html { scroll-behavior: smooth; }
+
+.gt-paper {
+  background-color: #FAF7F0;
+  background-image:
+    radial-gradient(rgba(15, 30, 51, 0.055) 1px, transparent 0),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(15,30,51,0.03) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(15,30,51,0.03) 31px 32px);
+  background-size: 22px 22px, auto, auto;
+}
+.gt-topo {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%230F1E33' stroke-opacity='0.10' stroke-width='1'%3E%3Cpath d='M-20 80 C 80 60, 140 110, 220 90 S 360 70, 420 100'/%3E%3Cpath d='M-20 140 C 80 120, 150 170, 230 150 S 360 130, 420 160'/%3E%3Cpath d='M-20 200 C 90 180, 160 230, 240 210 S 370 190, 420 220'/%3E%3Cpath d='M-20 260 C 90 240, 170 290, 250 270 S 370 250, 420 280'/%3E%3Cpath d='M-20 320 C 100 300, 180 350, 260 330 S 380 310, 420 340'/%3E%3C/g%3E%3C/svg%3E");
+}
+.gt-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 14 -7'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.10'/%3E%3C/svg%3E");
+}
+@keyframes gt-grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-1.2%, 0.8%); }
+  50% { transform: translate(0.9%, -1.1%); }
+  75% { transform: translate(-0.7%, -0.6%); }
+  100% { transform: translate(0, 0); }
+}
+.gt-grain-anim { animation: gt-grain-shift 1.1s steps(2) infinite; }
+
+/* --- white photo print (the taped artifact) --- */
+.gt-print {
+  background: #ffffff;
+  padding: 10px 10px 14px 10px;
+  border-radius: 3px;
+  box-shadow: 0 18px 40px -14px rgba(15, 30, 51, 0.35), 0 2px 6px rgba(15,30,51,0.12);
+  border: 1px solid rgba(15,30,51,0.08);
+  transition: transform 0.55s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease;
+}
+.gt-print:hover { transform: rotate(0deg) scale(1.015) !important; box-shadow: 0 26px 56px -16px rgba(15,30,51,0.42); }
+
+/* --- photo well: deep-navy chamber every photo sits in --- */
+.gt-photo-well {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #0B1E3A;
+  isolation: isolate;
+  /* country-tintable film stock */
+  --gt-duo-a: rgba(10, 47, 255, 0.30);   /* shadow push */
+  --gt-duo-b: rgba(7, 18, 38, 0.62);     /* dusk floor */
+  --gt-bloom: rgba(255, 75, 0, 0.42);    /* ember halation */
+  --gt-leak: rgba(0, 194, 255, 0.26);    /* cyan leak */
+}
+.gt-photo-well img { display: block; }
+
+/* scenery = the blurry dream (duotone + blur + vignette) */
+.gt-scenic img {
+  filter: grayscale(0.35) contrast(1.06) saturate(1.4) brightness(0.85) blur(1.5px);
+  transform: scale(1.05);
+}
+.gt-scenic::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(130% 130% at 50% 42%, transparent 50%, rgba(4,10,24,0.68) 100%),
+    linear-gradient(180deg, var(--gt-duo-a), var(--gt-duo-b));
+  mix-blend-mode: multiply;
+}
+.gt-scenic::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    radial-gradient(90% 75% at 80% 16%, var(--gt-bloom) 0%, rgba(251,191,36,0.20) 34%, transparent 66%),
+    radial-gradient(70% 60% at 8% 90%, var(--gt-leak) 0%, transparent 62%),
+    linear-gradient(0deg, rgba(96,118,160,0.16), rgba(96,118,160,0.16)); /* lifted blacks */
+  mix-blend-mode: screen;
+}
+
+/* food = the sharp souvenir (~20% brighter, no blur) */
+.gt-food img {
+  filter: contrast(1.1) saturate(1.28) brightness(1.06);
+}
+.gt-food::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(150% 150% at 50% 40%, transparent 62%, rgba(4,10,24,0.38) 100%),
+    linear-gradient(180deg, rgba(10,47,255,0.08), rgba(7,18,38,0.22));
+  mix-blend-mode: multiply;
+}
+.gt-food::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: radial-gradient(85% 60% at 82% 12%, rgba(255,110,20,0.24), transparent 58%);
+  mix-blend-mode: screen;
+}
+
+/* country nudges — never breaks, only bends the same stock */
+.gt-tint-ireland { --gt-duo-a: rgba(12, 88, 62, 0.36); --gt-duo-b: rgba(6, 26, 20, 0.60); --gt-bloom: rgba(255, 140, 60, 0.30); }
+.gt-tint-italy   { --gt-duo-a: rgba(10, 47, 255, 0.30); --gt-duo-b: rgba(7, 18, 38, 0.62); --gt-bloom: rgba(255, 75, 0, 0.46); }
+.gt-tint-greece  { --gt-duo-a: rgba(0, 92, 220, 0.38); --gt-duo-b: rgba(5, 20, 44, 0.64); --gt-bloom: rgba(255, 190, 80, 0.28); }
+.gt-tint-india   { --gt-duo-a: rgba(120, 50, 180, 0.18); --gt-duo-b: rgba(44, 16, 8, 0.55); --gt-bloom: rgba(255, 110, 0, 0.52); }
+
+/* RGB prism light — hero prints ONLY, so it stays special */
+.gt-prism {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  mix-blend-mode: screen; opacity: 0.9;
+  background:
+    linear-gradient(112deg, transparent 40%, rgba(255,0,90,0.15) 46%, rgba(255,170,0,0.20) 50%, rgba(0,255,180,0.13) 54%, rgba(0,120,255,0.17) 58%, transparent 66%),
+    radial-gradient(55% 45% at 88% 78%, rgba(0,194,255,0.20), transparent 60%),
+    radial-gradient(40% 36% at 14% 16%, rgba(255,75,0,0.22), transparent 60%);
+}
+.gt-prism-fringe { box-shadow: -2px 0 0 rgba(255,40,0,0.32), 2px 0 0 rgba(0,220,255,0.32); }
+
+/* camcorder chrome text inside photo wells */
+.gt-chrome { color: rgba(255,255,255,0.92); text-shadow: 0 1px 4px rgba(4,10,24,0.9); }
+
+/* --- mono stamps & pills --- */
+.gt-stamp {
+  border: 1px solid rgba(15,30,51,0.22);
+  background: rgba(15,30,51,0.04);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* passport ink stamp (double ring, sits on prints) */
+.gt-passport {
+  border: 2px solid currentColor;
+  border-radius: 9999px;
+  position: relative;
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+.gt-passport::before {
+  content: "";
+  position: absolute; inset: 3px;
+  border: 1px dashed currentColor;
+  border-radius: 9999px;
+}
+
+/* --- perforated travel ticket --- */
+.gt-ticket-wrap {
+  filter: drop-shadow(0 16px 26px rgba(15,30,51,0.22)) drop-shadow(0 2px 5px rgba(15,30,51,0.12));
+}
+.gt-ticket {
+  position: relative;
+  background: #FFFDF6;
+  border: 1px solid rgba(15,30,51,0.14);
+  --notch: 50%;
+  -webkit-mask:
+    radial-gradient(circle 9px at 0 var(--notch), transparent 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% var(--notch), transparent 97%, #000) 100% 0 / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 9px at 0 var(--notch), transparent 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% var(--notch), transparent 97%, #000) 100% 0 / 51% 100% no-repeat;
+}
+.gt-barcode {
+  background-image: repeating-linear-gradient(90deg,
+    currentColor 0 2px, transparent 2px 5px,
+    currentColor 5px 6px, transparent 6px 8px,
+    currentColor 8px 11px, transparent 11px 15px);
+}
+
+/* --- dotted route down the page --- */
+.gt-route-line {
+  background-image: linear-gradient(to bottom, rgba(194,65,12,0.75) 45%, transparent 45%);
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+}
+.gt-route-ghost {
+  background-image: linear-gradient(to bottom, rgba(15,30,51,0.18) 45%, transparent 45%);
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+}
+
+@keyframes gt-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.gt-marquee-track { animation: gt-marquee 32s linear infinite; }
+@keyframes gt-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.gt-rec { animation: gt-blink 1.6s ease-in-out infinite; }
+
+
+
+
