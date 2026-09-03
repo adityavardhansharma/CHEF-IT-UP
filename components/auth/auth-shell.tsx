@@ -73,6 +73,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   const s = SIDE[mode];
+  const tint = mode === "sign-in" ? "gt-tint-ireland" : "gt-tint-italy";
   return (
     <div className="min-h-screen gt-paper gt-topo text-[#0F1E33] flex flex-col">
       {/* folio strip */}
@@ -112,7 +113,7 @@ export function AuthShell({
 
           <figure className="relative gt-print -rotate-2 hover:rotate-0 mt-8 max-w-md">
             <div className="washi-tape -top-3 left-8 -rotate-6" />
-            <div className="relative aspect-[16/10] w-full gt-photo-well gt-haze">
+            <div className={`relative aspect-[16/10] w-full gt-photo-well gt-scenic ${tint}`}>
               <Image
                 src={`https://images.unsplash.com/${s.photo}?auto=format&fit=crop&w=900&q=80`}
                 alt={s.alt}
