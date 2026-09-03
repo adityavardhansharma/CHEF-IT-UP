@@ -58,7 +58,7 @@ export function GTNavbar() {
             GRAND TOUR VOL.II
           </span>
         </Link>
-        <nav className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.14em] text-[#5B6B82]">
+        <nav aria-label="Grand Tour chapters" className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.14em] text-[#5B6B82]">
           {LINKS.map((l) => (
             <a key={l.label} href={l.href} className="hover:text-[#C2410C] transition-colors">
               {l.label}
@@ -77,12 +77,17 @@ export function GTNavbar() {
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-        <button onClick={() => setOpen(!open)} className="md:hidden p-1.5 text-[#0F1E33]" aria-label="Menu">
+        <button
+          onClick={() => setOpen(!open)}
+          className="md:hidden p-1.5 text-[#0F1E33]"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+        >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
       {open && (
-        <div className="md:hidden bg-[#FAF7F0] border-t border-[#0F1E33]/10 px-4 py-5 space-y-3 text-xs font-mono tracking-widest">
+        <nav aria-label="Grand Tour chapters" className="md:hidden bg-[#FAF7F0] border-t border-[#0F1E33]/10 px-4 py-5 space-y-3 text-xs font-mono tracking-widest">
           {LINKS.map((l) => (
             <a key={l.label} href={l.href} onClick={() => setOpen(false)} className="block text-[#0F1E33]">
               {l.label}
@@ -91,7 +96,7 @@ export function GTNavbar() {
           <Link href="/onboarding" className="block text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
             Begin the tour
           </Link>
-        </div>
+        </nav>
       )}
     </header>
   );
