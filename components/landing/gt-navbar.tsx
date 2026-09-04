@@ -6,13 +6,9 @@ import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { Menu, X, ArrowRight, Compass } from "lucide-react";
 
 const LINKS = [
-  { label: "BREAKFAST", href: "#mile-breakfast" },
-  { label: "LUNCH", href: "#mile-lunch" },
-  { label: "18:15 HOME", href: "#mile-afterwork" },
-  { label: "GYM", href: "#mile-gym" },
-  { label: "FAMILY TABLE", href: "#mile-family" },
-  { label: "WEEKEND", href: "#mile-weekend" },
-  { label: "GUESTBOOK", href: "#guestbook" },
+  { label: "FEATURES", href: "#mile-breakfast" },
+  { label: "HOW IT WORKS", href: "#postcards" },
+  { label: "PRICING", href: "#hearth" },
 ];
 
 /** Scroll position rendered as trip kilometres. */
@@ -59,7 +55,7 @@ export function GTNavbar() {
             A WEEK IN DINNERS
           </span>
         </Link>
-        <nav aria-label="Week chapters" className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.14em] text-[#5B6B82]">
+        <nav aria-label="Primary" className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.14em] text-[#5B6B82]">
           {LINKS.map((l) => (
             <a key={l.label} href={l.href} className="hover:text-[#C2410C] transition-colors">
               {l.label}
@@ -88,13 +84,16 @@ export function GTNavbar() {
         </button>
       </div>
       {open && (
-        <nav aria-label="Week chapters" className="md:hidden bg-[#FAF7F0] border-t border-[#0F1E33]/10 px-4 py-5 space-y-3 text-xs font-mono tracking-widest">
+        <nav aria-label="Primary" className="md:hidden bg-[#FAF7F0] border-t border-[#0F1E33]/10 px-4 py-5 space-y-3 text-xs font-mono tracking-widest">
           {LINKS.map((l) => (
             <a key={l.label} href={l.href} onClick={() => setOpen(false)} className="block text-[#0F1E33]">
               {l.label}
             </a>
           ))}
-          <Link href="/sign-up" className="block whitespace-nowrap text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
+          <Link href="/sign-in" onClick={() => setOpen(false)} className="block whitespace-nowrap text-center py-2.5 rounded-full border border-[#0F1E33]/20 text-[#0F1E33] font-semibold mt-2">
+            Sign in
+          </Link>
+          <Link href="/sign-up" onClick={() => setOpen(false)} className="block whitespace-nowrap text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
             Start your week
           </Link>
         </nav>
