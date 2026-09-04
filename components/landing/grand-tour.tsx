@@ -466,7 +466,7 @@ function Hero() {
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link
-              href="/onboarding"
+              href="/sign-up"
               className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-[#FAF7F0] text-sm font-semibold shadow-lg transition-colors active:scale-95"
             >
               Start your week <ArrowRight className="w-4 h-4" />
@@ -1505,7 +1505,7 @@ function Hearth() {
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link
-              href="/onboarding"
+              href="/sign-up"
               className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#FAF7F0] text-[#0F1E33] hover:bg-[#FF4B00] hover:text-[#FAF7F0] text-sm font-semibold shadow-xl transition-colors active:scale-95"
             >
               Open your folio <ArrowRight className="w-4 h-4" />

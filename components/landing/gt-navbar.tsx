@@ -71,7 +71,7 @@ export function GTNavbar() {
             Sign In
           </Link>
           <Link
-            href="/onboarding"
+            href="/sign-up"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
           >
             <span>Start your week</span>
@@ -94,7 +94,7 @@ export function GTNavbar() {
               {l.label}
             </a>
           ))}
-          <Link href="/onboarding" className="block text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
+          <Link href="/sign-up" className="block text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
             Start your week
           </Link>
         </nav>

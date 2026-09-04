@@ -32,10 +32,10 @@ export function GTFooter() {
         </div>
         <div className="space-y-2">
           <p className="font-mono tracking-[0.18em] text-[#0F1E33]">ENGINE</p>
-          <Link href="/onboarding" className="block hover:text-[#C2410C]">Pantry Sync</Link>
-          <Link href="/onboarding" className="block hover:text-[#C2410C]">Portions 1P–6P</Link>
-          <Link href="/onboarding" className="block hover:text-[#C2410C]">Allergen Lock</Link>
-          <Link href="/onboarding" className="block hover:text-[#C2410C]">Surprise Me</Link>
+          <Link href="/sign-up" className="block hover:text-[#C2410C]">Pantry Sync</Link>
+          <Link href="/sign-up" className="block hover:text-[#C2410C]">Portions 1P–6P</Link>
+          <Link href="/sign-up" className="block hover:text-[#C2410C]">Allergen Lock</Link>
+          <Link href="/sign-up" className="block hover:text-[#C2410C]">Surprise Me</Link>
         </div>
         <div className="space-y-2">
           <p className="font-mono tracking-[0.18em] text-[#0F1E33]">STANDARD</p>
