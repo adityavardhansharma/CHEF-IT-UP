@@ -5,11 +5,9 @@ import { useState } from "react";
 import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { Menu, X, ArrowRight, Compass } from "lucide-react";
 
-const LINKS = [
-  { label: "FEATURES", href: "#mile-breakfast" },
-  { label: "HOW IT WORKS", href: "#postcards" },
-  { label: "PRICING", href: "#hearth" },
-];
+// Placeholder nav — real pages (/features, /how-it-works, /pricing) come later,
+// so these point nowhere for now.
+const LINKS = [{ label: "FEATURES" }, { label: "HOW IT WORKS" }, { label: "PRICING" }];
 
 /** Scroll position rendered as trip kilometres. */
 function Odometer() {
@@ -57,9 +55,9 @@ export function GTNavbar() {
         </Link>
         <nav aria-label="Primary" className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.14em] text-[#5B6B82]">
           {LINKS.map((l) => (
-            <a key={l.label} href={l.href} className="hover:text-[#C2410C] transition-colors">
+            <span key={l.label} className="cursor-default">
               {l.label}
-            </a>
+            </span>
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
@@ -86,9 +84,9 @@ export function GTNavbar() {
       {open && (
         <nav aria-label="Primary" className="md:hidden bg-[#FAF7F0] border-t border-[#0F1E33]/10 px-4 py-5 space-y-3 text-xs font-mono tracking-widest">
           {LINKS.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setOpen(false)} className="block text-[#0F1E33]">
+            <span key={l.label} className="block cursor-default text-[#0F1E33]">
               {l.label}
-            </a>
+            </span>
           ))}
           <Link href="/sign-in" onClick={() => setOpen(false)} className="block whitespace-nowrap text-center py-2.5 rounded-full border border-[#0F1E33]/20 text-[#0F1E33] font-semibold mt-2">
             Sign in
