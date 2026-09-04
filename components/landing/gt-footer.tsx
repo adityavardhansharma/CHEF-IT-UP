@@ -23,8 +23,8 @@ export function GTFooter() {
         </div>
         <div className="space-y-2">
           <p className="font-mono tracking-[0.18em] text-[#0F1E33]">MILES</p>
-          <a href="#mile-morning" className="block hover:text-[#C2410C]">06:40 Gym</a>
-          <a href="#mile-kids" className="block hover:text-[#C2410C]">Kids Table</a>
+          <a href="#mile-gym" className="block hover:text-[#C2410C]">06:40 Gym</a>
+          <a href="#mile-breakfast" className="block hover:text-[#C2410C]">Kids Table</a>
           <a href="#mile-afterwork" className="block hover:text-[#C2410C]">18:15 Rescue</a>
           <a href="#mile-family" className="block hover:text-[#C2410C]">Family Table</a>
           <a href="#mile-weekend" className="block hover:text-[#C2410C]">Van Weekend</a>

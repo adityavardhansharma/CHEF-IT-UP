@@ -463,19 +463,19 @@ function Hero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.34 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3"
           >
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-[#FAF7F0] text-sm font-semibold shadow-lg transition-colors active:scale-95"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-[#FAF7F0] text-sm font-semibold shadow-lg transition-colors active:scale-95"
             >
-              Start your week <ArrowRight className="w-4 h-4" />
+              Start your week <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <a
-              href="#mile-morning"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-white border border-[#0F1E33]/15 text-sm font-semibold text-[#0F1E33] hover:border-[#0F1E33]/40 transition-colors"
+              href="#mile-breakfast"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-white border border-[#0F1E33]/15 text-sm font-semibold text-[#0F1E33] hover:border-[#0F1E33]/40 transition-colors"
             >
-              <MapPin className="w-4 h-4" /> See the week
+              <MapPin className="w-4 h-4 shrink-0" /> See the week
             </a>
           </motion.div>
 
@@ -1502,17 +1502,17 @@ function Hearth() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.7, delay: 0.36 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3"
           >
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#FAF7F0] text-[#0F1E33] hover:bg-[#FF4B00] hover:text-[#FAF7F0] text-sm font-semibold shadow-xl transition-colors active:scale-95"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-[#FAF7F0] text-[#0F1E33] hover:bg-[#FF4B00] hover:text-[#FAF7F0] text-sm font-semibold shadow-xl transition-colors active:scale-95"
             >
-              Open your folio <ArrowRight className="w-4 h-4" />
+              Open your folio <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex items-center px-7 py-3 rounded-full border border-[#FAF7F0]/40 text-[#FAF7F0] text-sm font-semibold hover:border-[#FAF7F0]/80 transition-colors"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center px-7 py-3 rounded-full border border-[#FAF7F0]/40 text-[#FAF7F0] text-sm font-semibold hover:border-[#FAF7F0]/80 transition-colors"
             >
               Sign in
             </Link>

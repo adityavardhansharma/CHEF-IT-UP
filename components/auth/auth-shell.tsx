@@ -97,9 +97,21 @@ export function AuthShell({
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-        {/* editorial panel */}
-        <div className="relative">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start lg:items-center">
+        {/* mobile-only compact hero — form comes right after, no scroll hunt */}
+        <div className="lg:hidden order-1 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#0F1E33]/12 shadow-sm font-mono text-[10px] tracking-[0.2em]">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 gt-rec" />
+            {s.pill}
+          </div>
+          <h1 className="mt-3 font-serif text-3xl tracking-tight leading-[1.08]">{s.headline}</h1>
+          <p className="mt-2 text-sm text-[#475569] font-light leading-relaxed max-w-md mx-auto">
+            {s.deck}
+          </p>
+        </div>
+
+        {/* editorial panel — desktop only, full art direction kept */}
+        <div className="relative hidden lg:block order-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#0F1E33]/12 shadow-sm font-mono text-[10px] tracking-[0.2em]">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 gt-rec" />
             {s.pill}
@@ -141,8 +153,8 @@ export function AuthShell({
           </ul>
         </div>
 
-        {/* clerk card in a taped frame */}
-        <div className="relative w-full max-w-md mx-auto lg:mx-0 lg:justify-self-end">
+        {/* clerk card in a taped frame — first on mobile, right column on desktop */}
+        <div className="relative w-full max-w-md mx-auto lg:mx-0 lg:justify-self-end order-2">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 rotate-2 z-10 pointer-events-none">
             <div className="washi-tape !static !w-24" />
           </div>

@@ -66,13 +66,13 @@ export function GTNavbar() {
             </a>
           ))}
         </nav>
-        <div className="hidden sm:flex items-center gap-3">
-          <Link href="/sign-in" className="text-[11px] font-mono tracking-widest text-[#5B6B82] hover:text-[#0F1E33] px-2 py-1">
+        <div className="hidden md:flex items-center gap-3">
+          <Link href="/sign-in" className="whitespace-nowrap shrink-0 text-[11px] font-mono tracking-widest text-[#5B6B82] hover:text-[#0F1E33] px-2 py-1">
             Sign In
           </Link>
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
+            className="inline-flex whitespace-nowrap shrink-0 items-center gap-1.5 px-4 py-2 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
           >
             <span>Start your week</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -94,7 +94,7 @@ export function GTNavbar() {
               {l.label}
             </a>
           ))}
-          <Link href="/sign-up" className="block text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
+          <Link href="/sign-up" className="block whitespace-nowrap text-center py-2.5 rounded-full bg-[#0F1E33] text-white font-semibold mt-2">
             Start your week
           </Link>
         </nav>
