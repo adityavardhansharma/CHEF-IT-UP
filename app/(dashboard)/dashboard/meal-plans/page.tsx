@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
@@ -40,9 +40,11 @@ export default function MealPlansPage() {
   // Archive completed plans
   const archivePlan = useMutation(api.mealPlans.archiveMealPlan);
   
-  // Check if plan is expired and archive it
+  // Check if plan is expired and archive it (once per plan — the query
+  // object identity can change while the server is still archiving)
+  const archivedPlanIds = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (activePlan) {
+    if (activePlan && !archivedPlanIds.current.has(activePlan._id)) {
       const startDate = parseISO(activePlan.startDate);
       const totalDays = activePlan.durationUnit === "weeks" 
         ? activePlan.duration * 7 
@@ -51,6 +53,7 @@ export default function MealPlansPage() {
       
       if (endOfDay(new Date()) > endOfDay(endDate)) {
         // Plan is expired, archive it
+        archivedPlanIds.current.add(activePlan._id);
         archivePlan({ planId: activePlan._id });
         toast({
           title: "Meal plan completed! 🎉",

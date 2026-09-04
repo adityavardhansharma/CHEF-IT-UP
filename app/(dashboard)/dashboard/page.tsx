@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -18,23 +19,28 @@ export default function DashboardPage() {
   const { toast } = useToast();
   
   const activePlan = mealPlans?.find((plan) => plan.status === "active");
-  
-  // Check if active plan is expired and archive it
-  if (activePlan) {
+
+  // Archive an expired active plan exactly once — never during render.
+  // (Mutating + toasting mid-render re-rendered in a loop → React #301 crash.)
+  const archivedPlanIds = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!activePlan || archivedPlanIds.current.has(activePlan._id)) return;
     const startDate = parseISO(activePlan.startDate);
-    const totalDays = activePlan.durationUnit === "weeks" 
-      ? activePlan.duration * 7 
-      : activePlan.duration;
+    const totalDays =
+      activePlan.durationUnit === "weeks"
+        ? activePlan.duration * 7
+        : activePlan.duration;
     const endDate = addDays(startDate, totalDays);
-    
+
     if (Date.now() > endDate.getTime()) {
+      archivedPlanIds.current.add(activePlan._id);
       archivePlan({ planId: activePlan._id });
       toast({
         title: "Meal plan completed! 🎉",
         description: "Your meal plan has ended. Create a new one to continue.",
       });
     }
-  }
+  }, [activePlan, archivePlan, toast]);
   
   // Calculate today's meals based on active plan
   const todayMeals = useQuery(
