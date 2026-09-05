@@ -1,21 +1,16 @@
 import { SignUp } from "@clerk/nextjs";
+import { AuthShell, authAppearance } from "@/components/auth/auth-shell";
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
-      <SignUp 
-        appearance={{
-          elements: {
-            rootBox: "mx-auto",
-            card: "shadow-xl"
-          }
-        }}
+    <AuthShell mode="sign-up">
+      <SignUp
+        appearance={authAppearance}
         routing="path"
         path="/sign-up"
         signInUrl="/sign-in"
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
+        fallbackRedirectUrl="/dashboard"
       />
-    </div>
+    </AuthShell>
   );
 }

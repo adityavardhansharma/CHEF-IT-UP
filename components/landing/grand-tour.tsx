@@ -14,18 +14,20 @@ import {
 } from "framer-motion";
 import {
   ArrowRight,
+  Baby,
+  Briefcase,
   Camera,
-  Castle,
   Check,
   Compass,
   Dices,
-  Flame,
+  Dumbbell,
+  Home,
   Landmark,
   Mail,
   MapPin,
   Navigation2,
   Stamp,
-  Waves,
+  Users,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------
@@ -412,7 +414,7 @@ function Hero() {
         aria-hidden
         className="hidden xl:block absolute left-7 top-[30rem] font-mono text-[9px] tracking-[0.34em] text-[#5B6B82]/80 [writing-mode:vertical-rl]"
       >
-        VOL. II — SHOT ON THE ROAD, 2003 STOCK
+        VOL. II — SHOT AT HOME, 2003 STOCK
       </span>
       <span
         aria-hidden
@@ -430,8 +432,8 @@ function Hero() {
             className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-[#0F1E33]/12 shadow-sm font-mono text-[9px] sm:text-[10px] tracking-[0.2em] text-[#0F1E33]"
           >
             <span className="w-2 h-2 rounded-full bg-red-500 gt-rec" />
-            REC — THE GRAND TOUR, VOL. II
-            <span className="text-[#5B6B82] hidden sm:inline">· ONE VAN · FOUR COUNTRIES · EVERY DINNER</span>
+            REC — CHEF-IT-UP · POWERED BY ECHOAI
+            <span className="text-[#5B6B82] hidden sm:inline">· AI MEAL PLANNER · COOKS FROM YOUR PANTRY</span>
           </motion.div>
 
           <motion.h1
@@ -440,7 +442,9 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="mt-6 font-serif text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.75rem] tracking-tight text-[#0F1E33]"
           >
-            Eat like you <span className="italic text-[#C2410C]">live</span> everywhere.
+            Dinner from your pantry,
+            <br />
+            <span className="italic text-[#C2410C]">planned by Chef It Up.</span>
           </motion.h1>
 
           <motion.p
@@ -449,43 +453,44 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className="mt-5 text-sm sm:text-lg text-[#475569] font-light max-w-2xl mx-auto leading-relaxed"
           >
-            One long drive — Irish storm, Dolomite dawn, Aegean noon, a Jaipur family
-            table — and dinner simply knew. Pantry, portions and allergies packed,
-            synced, riding shotgun the whole way.
+            Chef It Up is your AI meal planner, powered by EchoAI — it reads your
+            pantry, respects your allergies, diets and choices, scales every meal
+            1P→6P across 16 cuisines, and deducts groceries as you eat. Gym dawns
+            to Sunday tables: one quiet planner behind all of it.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.34 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3"
           >
             <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-[#FAF7F0] text-sm font-semibold shadow-lg transition-colors active:scale-95"
+              href="/sign-up"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-[#0F1E33] hover:bg-[#C2410C] text-[#FAF7F0] text-sm font-semibold shadow-lg transition-colors active:scale-95"
             >
-              Begin the tour <ArrowRight className="w-4 h-4" />
+              Start your week <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <a
-              href="#mile-ireland"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-white border border-[#0F1E33]/15 text-sm font-semibold text-[#0F1E33] hover:border-[#0F1E33]/40 transition-colors"
+              href="#mile-breakfast"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-white border border-[#0F1E33]/15 text-sm font-semibold text-[#0F1E33] hover:border-[#0F1E33]/40 transition-colors"
             >
-              <MapPin className="w-4 h-4" /> Follow the route
+              <MapPin className="w-4 h-4 shrink-0" /> See the week
             </a>
           </motion.div>
 
           <p className="mt-5 font-mono text-[9px] sm:text-[11px] tracking-[0.18em] text-[#5B6B82]">
-            DEP 53°55′N MOHER · VIA 46°29′N GIAU · 36°39′N OIA · 26°91′N JAIPUR · ARR HOME 19:15
+            06:40 GYM · 08:15 KIDS · 12:30 DESK · 18:15 HOME · 19:30 TABLE · SAT VAN · SUN RESET
           </p>
         </div>
 
         {/* the cover plate — one wide film print, artifacts taped over it */}
         <div className="relative mt-14 sm:mt-16 mb-16 sm:mb-24">
           <FilmPrint
-            src={U("photo-1469854523086-cc02fe5d8800", 1800)}
-            alt="Camper van on an open dusk road"
-            fig="PLATE 00 // THE ROAD OUT"
-            sub="day one — everything we need is in the back"
+            src={U("photo-1528605248644-14dd04022da1", 1800)}
+            alt="A big group sharing dinner at one long table"
+            fig="PLATE 00 // THE WHOLE CREW"
+            sub="every seat taken, sunday"
             rotate="-rotate-1"
             tapePos="left-10 -rotate-6"
             aspect="aspect-[16/10] sm:aspect-[21/9]"
@@ -494,9 +499,9 @@ function Hero() {
             sizes="(max-width: 768px) 96vw, 1152px"
             chrome={
               <CamChrome
-                time="00:06:04"
+                time="19:32:04"
                 iso="ISO 800 · 24 FPS"
-                coords="46°29′N — SOMEWHERE PAST THE BORDER"
+                coords="HOME — DINING ROOM, LAMP ON"
                 plate="AWB ● AUTO"
               />
             }
@@ -511,26 +516,27 @@ function Hero() {
           />
 
           <FoodPolaroid
-            src={U("photo-1547592166-23ac45744acd", 600)}
-            alt="Hearty stew in a dark bowl"
-            caption="first pot of the trip"
-            stamp="SHARP SOUVENIR"
+            src={U("photo-1594221708779-94832f4320d1", 600)}
+            alt="Baked chicken tray for the whole table"
+            caption="sunday roast, feeds six"
+            stamp="FEEDS SIX"
             className="absolute w-32 sm:w-44 -bottom-10 left-2 sm:left-8"
             rotate="-rotate-6"
-            tint="gt-tint-ireland"
+            tint="gt-tint-india"
             delay={0.35}
           />
 
           <div className="absolute -bottom-12 right-2 sm:right-8 w-[280px] sm:w-[310px] hidden md:block z-30">
             <TravelTicket
-              title="Boarding Pass"
+              title="Chef It Up · Week Pass"
               route="HOME → HOME"
               rows={[
-                ["Traveller", "you + the van"],
+                ["Engine", "EchoAI"],
+                ["Household", "you + 3 appetites"],
                 ["Pantry", "synced · auto-deduct", "text-[#047857]"],
                 ["Allergens", "locked · 0.0 ppm"],
               ]}
-              stampText="ALL MILES"
+              stampText="ALL WEEK"
               rotate="rotate-2"
               notch="58%"
             />
@@ -538,7 +544,7 @@ function Hero() {
         </div>
 
         <p className="text-center font-serif italic text-sm sm:text-base text-[#5B6B82] -mt-2">
-          — day 62. nobody asked “what’s for dinner.” not once. —
+          — tuesday. nobody opened a delivery app. not once. —
         </p>
       </div>
     </section>
@@ -550,13 +556,14 @@ function Hero() {
    ================================================================ */
 
 const TICKER_ITEMS = [
+  "CHEF-IT-UP · POWERED BY ECHOAI",
   "MEALS PLANNED 128,400",
-  "PANTRY AUTO-DEDUCT ACTIVE",
-  "HOURS RECLAIMED 18,200",
-  "16 CUISINES ON ROUTE",
+  "STORE RUNS SKIPPED 41,300",
+  "LUNCHBOXES PACKED 22,800",
+  "FAMILY TABLES 36,900",
+  "16 CUISINES AT HOME",
   "ALLERGEN LOCK 0.0 PPM",
   "WASTE SAVED 6.4 T",
-  "PORTIONS 1P → 6P",
 ];
 
 function Ticker() {
@@ -597,84 +604,83 @@ type Mile = {
   food2?: { src: string; alt: string; caption: string; stamp: string };
   ticket: { title: string; route: string; rows: [string, string, string?][]; stampText: string };
   tint: string;
-  engraving: "castle" | "arch" | "dome" | "lattice";
+  engraving?: "castle" | "arch" | "dome" | "lattice";
   passport: { icon: React.ElementType; top: string; bottom: string };
   flip?: boolean;
 };
 
 const MILES: Mile[] = [
   {
-    id: "mile-ireland",
+    id: "mile-breakfast",
     n: "01",
-    country: "IRELAND",
+    country: "HOME",
     plate: "PLATE NO. 02",
-    coords: "53°55′N — CLIFFS OF MOHER",
-    kicker: "IRELAND — THE TREK LEG",
+    coords: "07:00 — THE BREAKFAST TABLE",
+    kicker: "MORNINGS — ECHOAI FEEDS THE CREW",
     headline: (
       <>
-        Storm on the glass. <span className="italic text-[#C2410C]">Stew on the stove.</span>
+        Small critics. <span className="italic text-[#C2410C]">Serious fuel.</span>
       </>
     ),
-    deck: "Rain hammering the van roof, fog swallowing the cliff path, the harbor town shutting early below. None of it matters — tonight’s pot was planned before you left, from what’s already aboard.",
+    deck: "Chef It Up is a meal planner, not a food service — EchoAI reads your pantry, locks nut-free for school, and shapes the morning around your kids: fun plates for them, four lunchboxes scaled and packed for you.",
     notes: [
       {
-        lead: "Pantry rides shotgun",
-        rest: "— the plan cooks from what you packed, and deducts it as you eat.",
+        lead: "School-safe lock",
+        rest: "— nut-free stays nut-free in every suggestion. 0.0 ppm, non-negotiable.",
       },
       {
-        lead: "Zero store runs",
-        rest: "— no wet dash to a closed village shop. The stew was always in the plan.",
+        lead: "Fun that gets eaten",
+        rest: "— shapes, stacks and favourites first. Nutrition rides along quietly.",
       },
       {
-        lead: "Trek-day portions",
-        rest: "— colder, steeper days scale the pot up before you feel the difference.",
+        lead: "Boxes packed by 08:20",
+        rest: "— four portions scaled and packed while the kettle boils.",
       },
     ],
     scenic: {
-      src: U("photo-1506905925346-21bda4d32df4", 1200),
-      alt: "Misty green cliffs in fog",
-      fig: "FIG. 03 // GREEN HAZE",
-      sub: "the cliff road, day 4",
-      time: "09:41",
-      iso: "ISO 800",
+      src: U("photo-1542037104857-ffbb0b9155fb", 1200),
+      alt: "The whole family together, kids and all",
+      fig: "FIG. 03 // FULL HOUSE",
+      sub: "everyone, 07:00",
+      time: "07:02",
+      iso: "ISO 400",
     },
     food: {
-      src: U("photo-1547592166-23ac45744acd", 600),
-      alt: "Hearty one-pot stew",
-      caption: "cliff stew, still warming",
-      stamp: "0 RUNS IN THE RAIN",
+      src: U("photo-1525351484163-7529414344d8", 600),
+      alt: "Morning egg plates for the crew",
+      caption: "morning plates, gone by 07:20",
+      stamp: "KID-APPROVED",
     },
     ticket: {
-      title: "Rain Pass · Coastal Van",
-      route: "DUB → MOHER",
+      title: "Lunchbox Pass · Kitchen → School",
+      route: "07:00 → 08:20",
       rows: [
-        ["Grocery runs", "0 in the storm"],
-        ["Pot", "one · 22 min"],
-        ["Pantry after", "auto-deducted", "text-[#047857]"],
+        ["Boxes", "4 packed"],
+        ["Nuts", "0.0 ppm", "text-[#047857]"],
+        ["Complaints", "zero"],
       ],
-      stampText: "HEARTY / HOT",
+      stampText: "SCHOOL-SAFE",
     },
-    tint: "gt-tint-ireland",
-    engraving: "castle",
-    passport: { icon: Castle, top: "Éire", bottom: "Mile 01" },
+    tint: "gt-tint-greece",
+    passport: { icon: Baby, top: "07:00", bottom: "Mile 01" },
   },
   {
-    id: "mile-italy",
-    n: "02",
+    id: "mile-climb",
+    n: "07",
     country: "ITALIA",
-    plate: "PLATE NO. 03",
+    plate: "PLATE NO. 08",
     coords: "46°29′N — PASSO GIAU → TUSCANY",
-    kicker: "ITALY — THE CLIMB LEG",
+    kicker: "ECHOAI FUELS THE CLIMB · ITALY",
     headline: (
       <>
         Climb on carbs. <span className="italic text-[#C2410C]">Descend on Tuscany.</span>
       </>
     ),
-    deck: "Out at dawn for the pass, freewheeling into a farmhouse dusk. The day’s effort writes the menu — more on the plate the morning you climb, protein waiting at the table the night you recover.",
+    deck: "Out at dawn for the pass, freewheeling into a farmhouse dusk. EchoAI plans fuel around the ride — 68g carb-load the night before from pantry staples, recovery waiting at the bottom, the table rescaling for whoever you met on the climb.",
     notes: [
       {
-        lead: "Macros follow the ride",
-        rest: "— 68g of carbs load before the pass, 52g of protein waits at the bottom.",
+        lead: "Fuel before, rebuild after",
+        rest: "— 68g of carbs the night before the pass, a recovery bowl at the bottom.",
       },
       {
         lead: "1P → 6P at the table",
@@ -682,7 +688,7 @@ const MILES: Mile[] = [
       },
       {
         lead: "Cuisine set to place",
-        rest: "— Tuscan tonight, coastal salmon tomorrow. Same pantry, different country.",
+        rest: "— pasta before, Tuscan after. Same pantry, different altitude.",
       },
     ],
     scenic: {
@@ -694,141 +700,308 @@ const MILES: Mile[] = [
       iso: "ISO 800",
     },
     food: {
-      src: U("photo-1598515214211-89d3c73ae83b", 600),
-      alt: "Tuscan roast chicken plate",
-      caption: "farmhouse chicken, night 12",
-      stamp: "52G PROTEIN",
+      src: U("photo-1551183053-bf91a1d81141", 600),
+      alt: "Big pasta carb-load the night before the climb",
+      caption: "carb-load, night before",
+      stamp: "68G CARBS",
     },
     food2: {
-      src: U("photo-1467003909585-2f8a72700288", 500),
-      alt: "Coastal salmon plate",
-      caption: "coast salmon, night 13",
-      stamp: "ON PLAN",
+      src: U("photo-1547592166-23ac45744acd", 500),
+      alt: "Hearty recovery soup the morning after",
+      caption: "recovery, morning after",
+      stamp: "REBUILT",
     },
     ticket: {
       title: "Giro Pass · Ride + Table",
       route: "GIAU → SIENA",
       rows: [
-        ["Carbs, ride morning", "68 g"],
-        ["Protein, recovery", "52 g"],
+        ["Carbs, night before", "68 g"],
+        ["Recovery, morning after", "full bowl"],
         ["Table setting", "1P → 6P"],
       ],
       stampText: "FUELLED, NOT STUFFED",
     },
     tint: "gt-tint-italy",
     engraving: "arch",
-    passport: { icon: Landmark, top: "Italia", bottom: "Mile 02" },
+    passport: { icon: Landmark, top: "Italia", bottom: "Mile 07" },
+  },
+  {
+    id: "mile-lunch",
+    n: "02",
+    country: "HOME",
+    plate: "PLATE NO. 03",
+    coords: "12:30 — THE DESK LEG",
+    kicker: "WORKDAYS — ECHOAI BEATS DELIVERY",
+    headline: (
+      <>
+        Lunch beat <span className="italic text-[#C2410C]">the delivery guy.</span>
+      </>
+    ),
+    deck: "EchoAI plans lunch from your pantry and your tastes — only ingredients you already own, matched to your diet. Fifteen minutes from decided to desk, zero delivery apps.",
+    notes: [
+      {
+        lead: "Cooks from the pantry",
+        rest: "— the plan only suggests what you already own. No top-up shop.",
+      },
+      {
+        lead: "Fifteen minutes flat",
+        rest: "— faster than the delivery estimate, and it was already paid for.",
+      },
+      {
+        lead: "Light but holding",
+        rest: "— tuned to keep the afternoon sharp, not sleepy.",
+      },
+    ],
+    scenic: {
+      src: U("photo-1497366216548-37526070297c", 1200),
+      alt: "Bright office that never quite empties",
+      fig: "FIG. 05 // DESK O’CLOCK",
+      sub: "standup ran long, 12:30",
+      time: "12:34",
+      iso: "ISO 400",
+    },
+    food: {
+      src: U("photo-1498837167922-ddd27525d352", 600),
+      alt: "Desk lunch prepped from pantry vegetables",
+      caption: "desk bowl, hold the delivery",
+      stamp: "£0 DELIVERY",
+    },
+    ticket: {
+      title: "Desk Pass · Standup → Seated",
+      route: "12:30 → 12:45",
+      rows: [
+        ["Delivery", "£0"],
+        ["Cook", "15 min"],
+        ["Greens", "from pantry"],
+      ],
+      stampText: "PANTRY 1 — APPS 0",
+    },
+    tint: "gt-tint-italy",
+    passport: { icon: Briefcase, top: "12:30", bottom: "Mile 02" },
     flip: true,
   },
   {
-    id: "mile-greece",
+    id: "mile-afterwork",
     n: "03",
-    country: "HELLAS",
+    country: "HOME",
     plate: "PLATE NO. 04",
-    coords: "36°39′N — OIA, SANTORINI",
-    kicker: "GREECE — THE PICNIC LEG",
+    coords: "18:15 — THE RESCUE",
+    kicker: "EVENINGS — ECHOAI ALREADY DECIDED",
     headline: (
       <>
-        Pack light. <span className="italic text-[#C2410C]">Eat golden.</span>
+        Keys down. <span className="italic text-[#C2410C]">Dinner already decided.</span>
       </>
     ),
-    deck: "A blanket on warm stone, ferry horn somewhere below, everything white and blue. Lunch came out of one paper bag — light enough for the heat, safe for the one of you who can’t touch nuts.",
+    deck: "EchoAI chose tonight this morning — a full week plan built from your pantry stock, scaled to your household, allergies locked. No staring into the fridge, no debate, no emergency shop.",
     notes: [
       {
-        lead: "Built to travel",
-        rest: "— a 390 kcal mezze that survives a ferry crossing without a cooler.",
+        lead: "Decided before work",
+        rest: "— the evening meal was locked in with the morning plan. Zero deciding.",
       },
       {
-        lead: "Allergy lock",
-        rest: "— nut-free stays nut-free in every suggestion. 0.0 ppm, non-negotiable.",
+        lead: "Eighteen minutes",
+        rest: "— skillet salmon while the day slides off. Music on, done.",
       },
       {
-        lead: "Light diets, real joy",
-        rest: "— coastal Mediterranean tuned down in weight, never in flavor.",
+        lead: "Zero store runs",
+        rest: "— everything verified in-pantry at noon. The fridge keeps its promises.",
       },
     ],
     scenic: {
-      src: U("photo-1613395877344-13d4a8e0d49e", 1200),
-      alt: "White Santorini houses over blue sea",
-      fig: "FIG. 05 // AEGEAN NOON",
-      sub: "Oia, from the blanket",
-      time: "13:05",
-      iso: "ISO 200",
-    },
-    food: {
-      src: U("photo-1540189549336-e6e99c3679fe", 600),
-      alt: "Bright packable mezze bowl",
-      caption: "the paper-bag mezze",
-      stamp: "390 KCAL PACKED",
-    },
-    ticket: {
-      title: "Ferry Pass · Deck Seat",
-      route: "OIA → NAXOS",
-      rows: [
-        ["Pack weight", "one bag"],
-        ["Allergens", "0.0 ppm", "text-[#047857]"],
-        ["Ice packs", "none needed"],
-      ],
-      stampText: "SEA-PROOF LUNCH",
-    },
-    tint: "gt-tint-greece",
-    engraving: "dome",
-    passport: { icon: Waves, top: "Hellas", bottom: "Mile 03" },
-  },
-  {
-    id: "mile-india",
-    n: "04",
-    country: "BHARAT",
-    plate: "PLATE NO. 05",
-    coords: "26°91′N — JAIPUR, VIA THE MIST",
-    kicker: "INDIA — THE FAMILY LEG",
-    headline: (
-      <>
-        Six plates. <span className="italic text-[#C2410C]">One calm cook.</span>
-      </>
-    ),
-    deck: "Himalayan mist in the morning, the pink city by evening, and a table that keeps gaining chairs. Grandmother eats Jain, the kids want seconds — and nobody is doing math at the stove.",
-    notes: [
-      {
-        lead: "Family scaling",
-        rest: "— 1P to 6P and the spice curve scales with it. Heat stays right, never ×6.",
-      },
-      {
-        lead: "16 cuisines deep",
-        rest: "— regional Indian included, veg and Jain toggles on the same pot.",
-      },
-      {
-        lead: "Medical-aware",
-        rest: "— sugar, dairy and nut flags respected on every plate at the table.",
-      },
-    ],
-    scenic: {
-      src: U("photo-1544735716-392fe2489ffa", 1200),
-      alt: "Himalayan ridges in morning mist",
-      fig: "FIG. 06 // MIST RIDGE",
-      sub: "the foothills, day 51",
-      time: "06:48",
+      src: U("photo-1600565193348-f74bd3c7ccdf", 1200),
+      alt: "A dark kitchen mid-service, pan hissing",
+      fig: "FIG. 06 // KEYS DOWN",
+      sub: "home, 18:15",
+      time: "18:16",
       iso: "ISO 800",
     },
     food: {
-      src: U("photo-1585937421612-70a008356fbe", 600),
-      alt: "Turmeric curry bowls",
-      caption: "turmeric night, all six of us",
+      src: U("photo-1519708227418-c8fd9a32b7a2", 600),
+      alt: "Pan-seared salmon straight from the skillet",
+      caption: "salmon, 18 minutes flat",
+      stamp: "0 STORE RUNS",
+    },
+    ticket: {
+      title: "Rescue Pass · Office → Oven",
+      route: "18:15 → 18:33",
+      rows: [
+        ["Deciding", "0 min"],
+        ["Cook", "18 min"],
+        ["Store runs", "0"],
+      ],
+      stampText: "DECIDED ALREADY",
+    },
+    tint: "gt-tint-india",
+    passport: { icon: Home, top: "18:15", bottom: "Mile 03" },
+  },
+  {
+    id: "mile-gym",
+    n: "04",
+    country: "HOME",
+    plate: "PLATE NO. 05",
+    coords: "19:00 — THE GARAGE SESSION",
+    kicker: "EVENINGS — ECHOAI COUNTS PROTEIN",
+    headline: (
+      <>
+        Train after work. <span className="italic text-[#C2410C]">Chicken after training.</span>
+      </>
+    ),
+    deck: "Tell Chef It Up you train and EchoAI counts — 52g of grilled chicken after the last set, bigger plates on training days, lighter on rest days. Macros from your profile, never guesswork.",
+    notes: [
+      {
+        lead: "Protein with a purpose",
+        rest: "— 52g of grilled chicken lands after the last set. Rebuilt by dinner.",
+      },
+      {
+        lead: "Evening portions",
+        rest: "— training days eat bigger automatically. Rest days don’t.",
+      },
+      {
+        lead: "No stove math",
+        rest: "— macros counted before you lifted. Just sear and sit.",
+      },
+    ],
+    scenic: {
+      src: U("photo-1517836357463-d25dfeac3438", 1200),
+      alt: "Dumbbells waiting in a dark garage gym",
+      fig: "FIG. 06 // LAST SET",
+      sub: "the garage, 19:00",
+      time: "19:04",
+      iso: "ISO 800",
+    },
+    food: {
+      src: U("photo-1604503468506-a8da13d82791", 600),
+      alt: "Grilled chicken breast, macro-counted",
+      caption: "grilled chicken, earned",
+      stamp: "52G PROTEIN",
+    },
+    ticket: {
+      title: "Pump Pass · Desk → Dumbbells",
+      route: "19:00 → 20:00",
+      rows: [
+        ["Protein", "52 g"],
+        ["Cook", "20 min"],
+        ["Excuses", "zero"],
+      ],
+      stampText: "REBUILT",
+    },
+    tint: "gt-tint-italy",
+    passport: { icon: Dumbbell, top: "19:00", bottom: "Mile 04" },
+    flip: true,
+  },
+  {
+    id: "mile-family",
+    n: "05",
+    country: "HOME",
+    plate: "PLATE NO. 06",
+    coords: "19:30 — THE FAMILY TABLE",
+    kicker: "NIGHTS — ECHOAI SETS SIX PLACES",
+    headline: (
+      <>
+        Six chairs. <span className="italic text-[#C2410C]">One calm cook.</span>
+      </>
+    ),
+    deck: "One plan seats the whole table — EchoAI scales 1P to 6P from the same pantry, plates veg, protein and comfort side by side, and picks across 16 cuisines to match everyone’s choices.",
+    notes: [
+      {
+        lead: "1P → 6P scaling",
+        rest: "— extra chairs rescales the pot while you set the table. Spice stays right.",
+      },
+      {
+        lead: "Many diets, one table",
+        rest: "— veg, high-protein and comfort plates from the same plan.",
+      },
+      {
+        lead: "Seconds built in",
+        rest: "— the plan cooks the buffer. Running out isn’t on the menu.",
+      },
+    ],
+    scenic: {
+      src: U("photo-1522708323590-d24dbb6b0267", 1200),
+      alt: "A warm dining room, chairs filling up",
+      fig: "FIG. 07 // ALL SEATED",
+      sub: "19:30, chairs full",
+      time: "19:32",
+      iso: "ISO 800",
+    },
+    food: {
+      src: U("photo-1565557623262-b51c2513a641", 600),
+      alt: "Family curry with naan, served from one pot",
+      caption: "seconds, obviously",
       stamp: "1P → 6P",
     },
     ticket: {
-      title: "Family Pass · Six Seats",
-      route: "MIST → JAIPUR",
+      title: "Table Pass · Stove → Seated",
+      route: "19:00 → 19:30",
       rows: [
-        ["Portions", "1P → 6P"],
-        ["Veg / Jain", "both · one pot"],
+        ["Seats", "6 full"],
+        ["Diets", "3 · one table"],
         ["Math at the stove", "zero"],
       ],
       stampText: "EVERYONE FED",
     },
     tint: "gt-tint-india",
-    engraving: "lattice",
-    passport: { icon: Flame, top: "Bharat", bottom: "Mile 04" },
+    passport: { icon: Users, top: "19:30", bottom: "Mile 05" },
+  },
+  {
+    id: "mile-weekend",
+    n: "06",
+    country: "OUT",
+    plate: "PLATE NO. 07",
+    coords: "SAT 10:04 — THE VAN LEG",
+    kicker: "WEEKENDS — ECHOAI PACKS THE VAN",
+    headline: (
+      <>
+        Windows down. <span className="italic text-[#C2410C]">Dinner packed.</span>
+      </>
+    ),
+    deck: "EchoAI turns the week’s surplus into Saturday — a packable picnic planned from leftovers, one bag, no cooler. Boring menu? Surprise Me re-deals a single dish without moving the week.",
+    notes: [
+      {
+        lead: "Built to travel",
+        rest: "— packable plates that survive the boot ride without a cooler.",
+      },
+      {
+        lead: "Leftovers with a plan",
+        rest: "— the week’s surplus becomes Saturday on purpose, not by accident.",
+      },
+      {
+        lead: "Surprise-me Saturdays",
+        rest: "— one tap re-deals the picnic. The week behind it doesn’t move.",
+      },
+    ],
+    scenic: {
+      src: U("photo-1469854523086-cc02fe5d8800", 1200),
+      alt: "Camper van on an open dusk road",
+      fig: "FIG. 08 // WINDOWS DOWN",
+      sub: "saturday, mile 212",
+      time: "10:04",
+      iso: "ISO 200",
+    },
+    food: {
+      src: U("photo-1504754524776-8f4f37790ca0", 600),
+      alt: "Picnic spread packed from the week's leftovers",
+      caption: "boot platter, no cooler",
+      stamp: "PACKED",
+    },
+    food2: {
+      src: U("photo-1509440159596-0249088772ff", 500),
+      alt: "Fresh loaves for paper-bag bites",
+      caption: "paper-bag bites",
+      stamp: "GRAB & GO",
+    },
+    ticket: {
+      title: "Van Pass · Home → Lake",
+      route: "SAT → SAT",
+      rows: [
+        ["Pack", "one bag"],
+        ["Cooler", "none"],
+        ["Plan", "surprise-me", "text-[#047857]"],
+      ],
+      stampText: "WEEKEND MODE",
+    },
+    tint: "gt-tint-italy",
+    passport: { icon: Compass, top: "SAT", bottom: "Mile 06" },
     flip: true,
   },
 ];
@@ -851,10 +1024,12 @@ function MileSpread(m: Mile) {
       </motion.div>
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-16 sm:pb-20">
-        <Engraving
-          variant={m.engraving}
-          className={`top-4 w-52 sm:w-64 hidden md:block ${m.flip ? "left-4" : "right-4"}`}
-        />
+        {m.engraving && (
+          <Engraving
+            variant={m.engraving}
+            className={`top-4 w-52 sm:w-64 hidden md:block ${m.flip ? "left-4" : "right-4"}`}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
           {/* editorial column */}
@@ -970,33 +1145,33 @@ function MilesJourney({ children }: { children: React.ReactNode }) {
 const POSTCARDS = [
   {
     s: U("photo-1506744038136-46273834b3fb", 700),
-    f: U("photo-1504674900247-0877df9cc836", 400),
+    f: U("photo-1547592180-85f173990554", 400),
     sc: "HIGHLANDS",
-    fc: "venison pie, dusk",
+    fc: "bothy stew, trip on a plate",
     coords: "57°N",
     tint: "gt-tint-ireland",
   },
   {
-    s: U("photo-1507525428034-b723cf961d3e", 700),
-    f: U("photo-1512621776951-a57141f2eefd", 400),
-    sc: "CÔTE D’AZUR",
-    fc: "market bowl, noon",
-    coords: "43°N",
+    s: U("photo-1530549387789-4c1017266635", 700),
+    f: U("photo-1574071318508-1cdbab80d002", 400),
+    sc: "POOL DAY",
+    fc: "pizza o’clock, obviously",
+    coords: "LANE 4",
     tint: "gt-tint-greece",
   },
   {
     s: U("photo-1485965120184-e220f721d03e", 700),
-    f: U("photo-1473093295043-cdd812d0e601", 400),
-    sc: "PROVENCE",
-    fc: "roadside al limone",
-    coords: "43°42′N",
+    f: U("photo-1512058564366-18510be2db19", 400),
+    sc: "RIDE DAY",
+    fc: "recovery bowls, earned",
+    coords: "68 KM",
     tint: "gt-tint-italy",
   },
   {
     s: U("photo-1599661046289-e31897846e41", 700),
-    f: U("photo-1490645935967-10de6ba17061", 400),
+    f: U("photo-1490474418585-ba9bad8fd0ea", 400),
     sc: "AMALFI",
-    fc: "citrus morning",
+    fc: "citrus + greens, trip on a plate",
     coords: "40°38′N",
     tint: "gt-tint-italy",
   },
@@ -1005,7 +1180,7 @@ const POSTCARDS = [
 function Postcards() {
   return (
     <section id="postcards" className="relative bg-[#F5F3EC]/70 border-y border-[#0F1E33]/10 scroll-mt-28">
-      <SectionRule left="INTERMISSION // POSTCARDS" right="PLATE NO. 06" className="pt-16 sm:pt-20" />
+      <SectionRule left="INTERMISSION // POSTCARDS" right="PLATE NO. 09" className="pt-16 sm:pt-20" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pb-20">
         <div className="flex items-center gap-2 mb-3">
           <Mail className="w-4 h-4 text-[#C2410C]" />
@@ -1014,11 +1189,11 @@ function Postcards() {
           </p>
         </div>
         <h2 className="font-serif text-3xl sm:text-5xl tracking-tight text-[#0F1E33]">
-          Four more stamps, <span className="italic text-[#C2410C]">same film.</span>
+          Four more stamps, <span className="italic text-[#C2410C]">same EchoAI.</span>
         </h2>
         <p className="mt-3 text-sm sm:text-base text-[#475569] font-light max-w-xl">
-          Wherever the van points next, the grade holds: scenery stays the blurry dream,
-          dinner stays the sharp souvenir.
+          Trip plates, ride fuel, pool pizza — every one planned from a pantry,
+          not ordered in. Scenery stays the blurry dream, dinner the sharp souvenir.
         </p>
 
         <div className="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
@@ -1077,7 +1252,7 @@ function Postcards() {
                   SURPRISE ME — SINGLE-MEAL RE-ROLL
                 </p>
                 <p className="text-sm text-[#475569] font-light mt-0.5">
-                  Tonight looks boring? One tap re-deals the dish. The rest of the week doesn’t move.
+                  Tonight looks boring? EchoAI re-deals one dish with a tap. The rest of the week doesn’t move.
                 </p>
               </div>
             </div>
@@ -1094,15 +1269,15 @@ function Postcards() {
 
 const METER = [
   { label: "MEALS PLANNED", value: 128400, sub: "plated across 16 cuisines" },
-  { label: "HOURS RECLAIMED", value: 18200, sub: "not spent deciding" },
   { label: "STORE RUNS SKIPPED", value: 41300, sub: "rain or otherwise" },
+  { label: "LUNCHBOXES PACKED", value: 22800, sub: "school-safe, every one" },
   { label: "WASTE SAVED", value: 6.4, decimals: 1, suffix: " T", sub: "eaten, not binned" },
 ];
 
 function TripMeter() {
   return (
     <section className="relative">
-      <SectionRule left="TRIP METER // RUNNING TOTALS" right="PLATE NO. 07" className="pt-16 sm:pt-20" />
+      <SectionRule left="WEEK METER // RUNNING TOTALS" right="PLATE NO. 10" className="pt-16 sm:pt-20" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pb-20">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1123,7 +1298,7 @@ function TripMeter() {
           <div className="relative">
             <div className="flex items-center justify-between px-6 sm:px-10 py-3.5 border-b border-white/10 font-mono text-[9px] sm:text-[10px] tracking-[0.22em] text-[#8FA3C2]">
               <span className="flex items-center gap-2 text-[#FAF7F0]">
-                <span className="w-2 h-2 rounded-full bg-red-500 gt-rec" /> TRIP B — ODOMETER
+                <span className="w-2 h-2 rounded-full bg-red-500 gt-rec" /> WEEK 42 — RUNNING TOTAL
               </span>
               <span>SINCE VOL. I</span>
             </div>
@@ -1153,38 +1328,38 @@ function TripMeter() {
 
 const GUESTBOOK = [
   {
+    city: "LEEDS",
+    time: "18:15",
+    quote:
+      "Walked in from work and dinner was already decided. I stood in the kitchen with nothing to do — so I just cooked, calmly, for the first time in years.",
+    name: "Dan · rescue leg",
+    tag: "0 STORE RUNS",
+  },
+  {
+    city: "SCHOOL RUN",
+    time: "08:15",
+    quote:
+      "Two kids, one nut allergy, four lunchboxes. The plan packs them while the kettle boils — and the bear-cakes never come back uneaten.",
+    name: "Meera · kids leg",
+    tag: "SCHOOL-SAFE",
+  },
+  {
     city: "GALWAY",
     time: "09:41",
     quote:
       "It rained for four days straight. We never once drove to a shop — the van pantry just kept being right.",
-    name: "Aoife · trek leg",
+    name: "Aoife · van leg",
     tag: "PANTRY SYNC",
-  },
-  {
-    city: "TRENTO",
-    time: "06:12",
-    quote:
-      "I set it to ride mornings. It fed the climb, then it fed the recovery. By day three I’d stopped thinking about food entirely.",
-    name: "Marco & Lena · climb leg",
-    tag: "MACROS ON PLAN",
-  },
-  {
-    city: "JAIPUR",
-    time: "19:15",
-    quote:
-      "Six of us, two diets, one pot. My mother-in-law checked the plate twice — then she asked for the plan.",
-    name: "Priya’s table · family leg",
-    tag: "1P→6P · JAIN",
   },
 ];
 
 function Guestbook() {
   return (
     <section id="guestbook" className="relative scroll-mt-28">
-      <SectionRule left="GUESTBOOK // SIGNED AT THE TABLE" right="PLATE NO. 08" className="pt-4" />
+      <SectionRule left="GUESTBOOK // PINNED TO THE FRIDGE" right="PLATE NO. 11" className="pt-4" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-20 sm:pb-24">
         <h2 className="font-serif text-3xl sm:text-5xl tracking-tight text-[#0F1E33]">
-          Strangers of the road, <span className="italic text-[#C2410C]">fed on time.</span>
+          Pinned to the fridge, <span className="italic text-[#C2410C]">not the map.</span>
         </h2>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {GUESTBOOK.map((c, i) => (
@@ -1247,7 +1422,7 @@ function Hearth() {
             <span className="w-2 h-2 rounded-full bg-red-500 gt-rec" /> REC 19:15
           </span>
           <span className="absolute top-4 right-4 sm:right-6 opacity-80">OCT 12 2003 · BATT ▮▮▮▯</span>
-          <span className="absolute bottom-4 left-4 sm:left-6 opacity-90">MILE 3,842 — HOME</span>
+          <span className="absolute bottom-4 left-4 sm:left-6 opacity-90">WEEK 42 — HOME</span>
           <span className="absolute bottom-4 right-4 sm:right-6 opacity-80">TAPE END</span>
         </div>
 
@@ -1269,7 +1444,7 @@ function Hearth() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="mt-3 font-serif text-4xl sm:text-6xl tracking-tight leading-[1.06] text-[#FAF7F0]"
           >
-            Every road ends <span className="italic text-[#FBBF24]">at a table.</span>
+            Every day ends <span className="italic text-[#FBBF24]">at a table.</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 14 }}
@@ -1278,7 +1453,7 @@ function Hearth() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mt-5 text-sm sm:text-base text-[#C7D2E4] font-light leading-relaxed max-w-xl mx-auto"
           >
-            Unpack the tour into one quiet kitchen. The pantry deducts itself as you eat,
+            Unpack the week into one quiet kitchen. EchoAI deducts the pantry as you eat,
             portions rescale to whoever showed up, allergens stay locked — and tomorrow
             is already packed.
           </motion.p>
@@ -1293,9 +1468,13 @@ function Hearth() {
             <div className="gt-ticket rounded-lg" style={{ "--notch": "56%" } as React.CSSProperties}>
               <div className="px-4 pt-3 pb-2 border-b border-[#0F1E33]/10 flex justify-between font-mono text-[9px] tracking-[0.2em] text-[#5B6B82] uppercase">
                 <span>Hearth Pass</span>
-                <span className="font-bold text-[#0F1E33]">ROAD → HOME</span>
+                <span className="font-bold text-[#0F1E33]">WEEK → HOME</span>
               </div>
               <div className="px-4 py-2.5 space-y-1.5 font-mono text-[11px] text-[#0F1E33]">
+                <div className="flex justify-between gap-6">
+                  <span className="text-[#5B6B82]">Engine</span>
+                  <span className="font-semibold">EchoAI</span>
+                </div>
                 <div className="flex justify-between gap-6">
                   <span className="text-[#5B6B82]">Tonight</span>
                   <span className="font-semibold">salmon · 2P · 18 min</span>
@@ -1323,17 +1502,17 @@ function Hearth() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.7, delay: 0.36 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3"
           >
             <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#FAF7F0] text-[#0F1E33] hover:bg-[#FF4B00] hover:text-[#FAF7F0] text-sm font-semibold shadow-xl transition-colors active:scale-95"
+              href="/sign-up"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center gap-2 px-7 py-3 rounded-full bg-[#FAF7F0] text-[#0F1E33] hover:bg-[#FF4B00] hover:text-[#FAF7F0] text-sm font-semibold shadow-xl transition-colors active:scale-95"
             >
-              Open your folio <ArrowRight className="w-4 h-4" />
+              Open your folio <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex items-center px-7 py-3 rounded-full border border-[#FAF7F0]/40 text-[#FAF7F0] text-sm font-semibold hover:border-[#FAF7F0]/80 transition-colors"
+              className="inline-flex w-full sm:w-auto justify-center whitespace-nowrap shrink-0 items-center px-7 py-3 rounded-full border border-[#FAF7F0]/40 text-[#FAF7F0] text-sm font-semibold hover:border-[#FAF7F0]/80 transition-colors"
             >
               Sign in
             </Link>

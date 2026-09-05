@@ -5,17 +5,23 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { APP_BRANDING, UI_TEXT } from "@/lib/branding";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { CuisineSelector } from "@/components/ui/cuisine-selector";
-import { Loader2, X, ChefHat } from "lucide-react";
+import { Loader2, X, ChefHat, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
+import {
+  PageHead,
+  FolioCard,
+  Stamp,
+  FieldLabel,
+  folioPrimary,
+  folioOutline,
+} from "@/components/dashboard/folio";
+import { cn } from "@/lib/utils";
 
 export default function NewMealPlanPage() {
   const router = useRouter();
@@ -65,6 +71,8 @@ export default function NewMealPlanPage() {
     { id: "snacks", label: "Snacks" },
     { id: "dessert", label: "Dessert" },
   ];
+
+  const STEPS = ["The basics", "Tastes", "Review"];
 
   const handleAddNegativeIngredient = () => {
     if (newNegativeIngredient.trim() && !negativeIngredients.includes(newNegativeIngredient.trim())) {
@@ -146,15 +154,15 @@ export default function NewMealPlanPage() {
         // EXTRA SAFETY: Deduplicate again before saving
         const savedKeys = new Set<string>();
         let savedCount = 0;
-        
+
         for (const meal of aiMealPlan.meals) {
           const key = `${meal.day}-${meal.mealType}`;
-          
+
           if (savedKeys.has(key)) {
             console.warn(`[Client] Skipping duplicate meal: Day ${meal.day}, ${meal.mealType}`);
             continue; // Skip this duplicate
           }
-          
+
           await addMealToPlan({
             planId,
             date: meal.date,
@@ -166,11 +174,11 @@ export default function NewMealPlanPage() {
             nutritionalInfo: meal.nutritionalInfo,
             portionSize: parseInt(familySize),
           });
-          
+
           savedKeys.add(key);
           savedCount++;
         }
-        
+
         console.log(`[Client] Saved ${savedCount} unique meals to database`);
       }
 
@@ -192,79 +200,104 @@ export default function NewMealPlanPage() {
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">Create Meal Plan</h1>
-        <p className="text-gray-600">{APP_BRANDING.aiRecipeGenerator.tagline}</p>
-      </div>
+  const inputSkin =
+    "border-[#0F1E33]/20 bg-white focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30";
 
-      {/* Progress Indicator */}
+  return (
+    <div className="mx-auto max-w-4xl space-y-8">
+      <PageHead
+        kicker="NEW WEEK PASS"
+        title="Write the week."
+        deck={APP_BRANDING.aiRecipeGenerator.tagline}
+      />
+
+      {/* Progress */}
       <div className="flex items-center justify-center gap-2">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                step >= s ? "bg-orange-600 text-white" : "bg-gray-200 text-gray-500"
-              }`}
-            >
-              {s}
+        {STEPS.map((label, i) => {
+          const s = i + 1;
+          const done = step > s;
+          const current = step === s;
+          return (
+            <div key={label} className="flex items-center">
+              <div className="flex flex-col items-center gap-1.5">
+                <div
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-full font-mono text-sm font-semibold transition-all",
+                    done && "bg-[#0F1E33] text-[#FAF7F0]",
+                    current && "bg-[#C2410C] text-white shadow-lg",
+                    !done && !current && "border border-[#0F1E33]/20 bg-white text-[#5B6B82]"
+                  )}
+                >
+                  {done ? "✓" : s}
+                </div>
+                <span
+                  className={cn(
+                    "hidden font-mono text-[9px] tracking-[0.18em] sm:block",
+                    current ? "text-[#C2410C]" : "text-[#5B6B82]"
+                  )}
+                >
+                  {label.toUpperCase()}
+                </span>
+              </div>
+              {s < STEPS.length && (
+                <div className={cn("mx-2 mb-5 h-0.5 w-10 sm:w-16", step > s ? "bg-[#0F1E33]" : "bg-[#0F1E33]/15")} />
+              )}
             </div>
-            {s < 3 && (
-              <div className={`w-16 h-1 ${step > s ? "bg-orange-600" : "bg-gray-200"}`} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step 1: Basic Information */}
       {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Set up the basics for your meal plan</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FolioCard className="p-6 sm:p-8">
+          <h2 className="font-serif text-2xl tracking-tight">The basics</h2>
+          <p className="mt-1 text-sm font-light text-[#475569]">
+            When, for how many, and which plates of the day.
+          </p>
+          <div className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <Label htmlFor="startDate">Start Date</Label>
+                <FieldLabel htmlFor="startDate">Start date</FieldLabel>
                 <Input
                   id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
+                  className={inputSkin}
                 />
               </div>
 
               <div>
-                <Label htmlFor="familySize">Family Size</Label>
+                <FieldLabel htmlFor="familySize">Seats at the table</FieldLabel>
                 <Input
                   id="familySize"
                   type="number"
                   min="1"
                   value={familySize}
                   onChange={(e) => setFamilySize(e.target.value)}
+                  className={inputSkin}
                 />
               </div>
 
               <div>
-                <Label htmlFor="duration">Duration</Label>
+                <FieldLabel htmlFor="duration">Duration</FieldLabel>
                 <Input
                   id="duration"
                   type="number"
                   min="1"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
+                  className={inputSkin}
                 />
               </div>
 
               <div>
-                <Label htmlFor="durationUnit">Duration Unit</Label>
+                <FieldLabel htmlFor="durationUnit">Duration unit</FieldLabel>
                 <select
                   id="durationUnit"
                   value={durationUnit}
                   onChange={(e) => setDurationUnit(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  className="flex h-10 w-full rounded-xl border border-[#0F1E33]/20 bg-white px-3 py-2 text-sm focus:border-[#C2410C] focus:outline-none"
                 >
                   <option value="days">Days</option>
                   <option value="weeks">Weeks</option>
@@ -273,48 +306,53 @@ export default function NewMealPlanPage() {
             </div>
 
             <div>
-              <Label>Meals Per Day</Label>
-              <div className="flex flex-wrap gap-4 mt-2">
-                {mealTypes.map((meal) => (
-                  <div key={meal.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={meal.id}
-                      checked={mealsPerDay.includes(meal.id)}
-                      onCheckedChange={() => toggleMealType(meal.id)}
-                    />
-                    <label
-                      htmlFor={meal.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              <FieldLabel>Plates per day</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {mealTypes.map((meal) => {
+                  const on = mealsPerDay.includes(meal.id);
+                  return (
+                    <button
+                      key={meal.id}
+                      type="button"
+                      onClick={() => toggleMealType(meal.id)}
+                      className={cn(
+                        "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                        on
+                          ? "border-[#0F1E33] bg-[#0F1E33] text-[#FAF7F0] shadow-md"
+                          : "border-[#0F1E33]/20 bg-white text-[#0F1E33] hover:border-[#C2410C]/60"
+                      )}
                     >
                       {meal.label}
-                    </label>
-                  </div>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <Button onClick={() => setStep(2)}>Next</Button>
+            <div className="flex justify-end border-t border-[#0F1E33]/10 pt-5">
+              <Button onClick={() => setStep(2)} className={cn(folioPrimary, "gap-1.5 text-sm")}>
+                Next <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
       )}
 
       {/* Step 2: Preferences */}
       {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Dietary Preferences</CardTitle>
-            <CardDescription>Customize your meal plan preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <FolioCard className="p-6 sm:p-8">
+          <h2 className="font-serif text-2xl tracking-tight">Tastes</h2>
+          <p className="mt-1 text-sm font-light text-[#475569]">
+            Diets, cuisines, and everything EchoAI must avoid.
+          </p>
+          <div className="mt-6 space-y-6">
             <div>
-              <Label htmlFor="dietType">Diet Type</Label>
+              <FieldLabel htmlFor="dietType">Diet type</FieldLabel>
               <select
                 id="dietType"
                 value={dietType}
                 onChange={(e) => setDietType(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                className="flex h-10 w-full rounded-xl border border-[#0F1E33]/20 bg-white px-3 py-2 text-sm capitalize focus:border-[#C2410C] focus:outline-none"
               >
                 {dietTypes.map((diet) => (
                   <option key={diet.toLowerCase()} value={diet.toLowerCase()}>
@@ -330,122 +368,117 @@ export default function NewMealPlanPage() {
             />
 
             <div>
-              <Label htmlFor="customInstructions">Custom Instructions (Optional)</Label>
+              <FieldLabel htmlFor="customInstructions">Notes for EchoAI · optional</FieldLabel>
               <Textarea
                 id="customInstructions"
-                placeholder="Add any specific instructions for your meal plan. For example: 'Focus on quick 15-minute meals', 'Use seasonal ingredients only', 'Make it kid-friendly', or 'Emphasize healthy snacks'."
+                placeholder="e.g. Quick 15-minute meals, kid-friendly, seasonal only…"
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
-                className="min-h-[100px] resize-none"
+                className="min-h-[100px] resize-none border-[#0F1E33]/20 bg-white placeholder:text-[#5B6B82]/70 focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                These instructions will be sent to the AI to customize your meal plan according to your preferences.
-              </p>
             </div>
 
             <div>
-              <Label>Ingredients to Avoid</Label>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {negativeIngredients.map((ingredient) => (
-                  <Badge key={ingredient} variant="destructive" className="gap-1">
-                    {ingredient}
-                    <button onClick={() => handleRemoveNegativeIngredient(ingredient)}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
+              <FieldLabel>Ingredients to avoid</FieldLabel>
+              {negativeIngredients.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {negativeIngredients.map((ingredient) => (
+                    <Stamp key={ingredient} tone="ember">
+                      {ingredient}
+                      <button onClick={() => handleRemoveNegativeIngredient(ingredient)} aria-label={`Remove ${ingredient}`}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Stamp>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
-                  placeholder="e.g., Mushrooms"
+                  placeholder="e.g. Mushrooms"
                   value={newNegativeIngredient}
                   onChange={(e) => setNewNegativeIngredient(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddNegativeIngredient()}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddNegativeIngredient()}
+                  className={inputSkin}
                 />
-                <Button onClick={handleAddNegativeIngredient}>Add</Button>
+                <Button onClick={handleAddNegativeIngredient} className={cn(folioOutline, "shrink-0")}>
+                  Add
+                </Button>
               </div>
             </div>
 
-            <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
-              <div className="flex items-start space-x-3">
+            <div className="rounded-2xl border border-[#0F1E33]/12 bg-[#FAF7F0] p-4">
+              <div className="flex items-start gap-3">
                 <Checkbox
                   id="assumeStaples"
                   checked={assumeBasicStaples}
                   onCheckedChange={(checked) => setAssumeBasicStaples(checked as boolean)}
+                  className="mt-0.5 border-[#0F1E33]/30 data-[state=checked]:border-[#0F1E33] data-[state=checked]:bg-[#0F1E33]"
                 />
                 <div className="flex-1">
-                  <label
-                    htmlFor="assumeStaples"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
+                  <label htmlFor="assumeStaples" className="cursor-pointer text-sm font-medium">
                     I have basic kitchen staples
                   </label>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Assumes you always have salt, pepper, oil, sugar, flour, and other common staples.
-                    Recipes won't require these in your pantry.
+                  <p className="mt-1 text-xs font-light text-[#475569]">
+                    Salt, pepper, oil, sugar, flour and other common staples are assumed —
+                    recipes won&apos;t require them in your pantry.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)}>
-                Back
+            <div className="flex justify-between border-t border-[#0F1E33]/10 pt-5">
+              <Button variant="outline" onClick={() => setStep(1)} className={cn(folioOutline, "gap-1.5 text-sm")}>
+                <ArrowLeft className="h-4 w-4" /> Back
               </Button>
-              <Button onClick={() => setStep(3)}>Next</Button>
+              <Button onClick={() => setStep(3)} className={cn(folioPrimary, "gap-1.5 text-sm")}>
+                Next <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
       )}
 
       {/* Step 3: Review & Generate */}
       {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Review & Generate</CardTitle>
-            <CardDescription>Review your meal plan settings and generate</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-gray-500">Start Date</Label>
-                <p className="font-medium">{format(new Date(startDate), "MMMM dd, yyyy")}</p>
-              </div>
-              <div>
-                <Label className="text-xs text-gray-500">Duration</Label>
-                <p className="font-medium">
-                  {duration} {durationUnit}
-                </p>
-              </div>
-              <div>
-                <Label className="text-xs text-gray-500">Family Size</Label>
-                <p className="font-medium">{familySize} people</p>
-              </div>
-              <div>
-                <Label className="text-xs text-gray-500">Diet Type</Label>
-                <p className="font-medium capitalize">{dietType}</p>
-              </div>
-            </div>
+        <FolioCard className="p-6 sm:p-8">
+          <h2 className="font-serif text-2xl tracking-tight">Review & fire</h2>
+          <p className="mt-1 text-sm font-light text-[#475569]">
+            Check the pass once — EchoAI plates the rest.
+          </p>
+          <div className="mt-6 space-y-5">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {[
+                ["Start date", format(new Date(startDate), "MMMM dd, yyyy")],
+                ["Duration", `${duration} ${durationUnit}`],
+                ["Seats", `${familySize} people`],
+                ["Diet", dietType],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">{k}</dt>
+                  <dd className="mt-0.5 font-medium capitalize">{v}</dd>
+                </div>
+              ))}
+            </dl>
 
             <div>
-              <Label className="text-xs text-gray-500">Meals Per Day</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                Plates per day
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
                 {mealsPerDay.map((meal) => (
-                  <Badge key={meal} variant="secondary" className="capitalize">
-                    {meal}
-                  </Badge>
+                  <Stamp key={meal} tone="paper" className="capitalize">{meal}</Stamp>
                 ))}
               </div>
             </div>
 
             {cuisinePreferences.length > 0 && (
               <div>
-                <Label className="text-xs text-gray-500">Selected Cuisines</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                  Cuisines
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
                   {cuisinePreferences.map((cuisine) => (
-                    <Badge key={cuisine} variant="secondary" className="capitalize">
-                      {cuisine}
-                    </Badge>
+                    <Stamp key={cuisine} tone="paper" className="capitalize">{cuisine}</Stamp>
                   ))}
                 </div>
               </div>
@@ -453,38 +486,35 @@ export default function NewMealPlanPage() {
 
             {negativeIngredients.length > 0 && (
               <div>
-                <Label className="text-xs text-gray-500">Ingredients to Avoid</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                  Avoiding
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
                   {negativeIngredients.map((ingredient) => (
-                    <Badge key={ingredient} variant="destructive">
-                      {ingredient}
-                    </Badge>
+                    <Stamp key={ingredient} tone="ember">{ingredient}</Stamp>
                   ))}
                 </div>
               </div>
             )}
 
-            <div>
-              <Label className="text-xs text-gray-500">Basic Staples</Label>
-              <p className="text-sm font-medium">
-                {assumeBasicStaples ? "✅ Assumed available" : "❌ Must be in pantry"}
-              </p>
-            </div>
+            <p className="font-mono text-[11px] tracking-[0.12em] text-[#047857]">
+              STAPLES {assumeBasicStaples ? "ASSUMED ON HAND" : "MUST BE IN PANTRY"}
+            </p>
 
             {customInstructions && (
-              <div>
-                <Label className="text-xs text-gray-500">Custom Instructions</Label>
-                <p className="text-sm font-medium bg-blue-50 p-3 rounded-md border">
-                  {customInstructions}
+              <div className="rounded-xl border border-[#0F1E33]/10 bg-[#FAF7F0] p-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                  Notes for EchoAI
                 </p>
+                <p className="mt-1 text-sm font-light">{customInstructions}</p>
               </div>
             )}
 
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)}>
-                Back
+            <div className="flex justify-between border-t border-[#0F1E33]/10 pt-5">
+              <Button variant="outline" onClick={() => setStep(2)} className={cn(folioOutline, "gap-1.5 text-sm")}>
+                <ArrowLeft className="h-4 w-4" /> Back
               </Button>
-              <Button onClick={handleGenerateMealPlan} disabled={isGenerating} className="gap-2">
+              <Button onClick={handleGenerateMealPlan} disabled={isGenerating} className={cn(folioPrimary, "gap-2 text-sm")}>
                 {isGenerating ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -498,8 +528,8 @@ export default function NewMealPlanPage() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
       )}
     </div>
   );

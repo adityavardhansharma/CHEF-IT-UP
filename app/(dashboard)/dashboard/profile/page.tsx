@@ -4,30 +4,35 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  PageHead,
+  FolioCard,
+  Stamp,
+  FieldLabel,
+  folioPrimary,
+  folioOutline,
+} from "@/components/dashboard/folio";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { user } = useUser();
   const profile = useQuery(api.users.getUserProfile);
   const updateProfile = useMutation(api.users.updateUserProfile);
-  
+
   const [allergies, setAllergies] = useState<Array<{ name: string; severity: string }>>([]);
   const [newAllergy, setNewAllergy] = useState("");
   const [allergySeverity, setAllergySeverity] = useState("moderate");
-  
+
   const [medicalConditions, setMedicalConditions] = useState<string[]>([]);
   const [newCondition, setNewCondition] = useState("");
-  
+
   const [favoriteIngredients, setFavoriteIngredients] = useState<string[]>([]);
   const [newFavorite, setNewFavorite] = useState("");
-  
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -104,206 +109,215 @@ export default function ProfilePage() {
 
   const commonAllergies = ["Peanuts", "Tree Nuts", "Dairy", "Eggs", "Soy", "Wheat", "Fish", "Shellfish"];
 
+  const inputSkin =
+    "border-[#0F1E33]/20 bg-white placeholder:text-[#5B6B82]/70 focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30";
+
+  const quickAddSkin =
+    "h-8 rounded-full border-[#0F1E33]/20 bg-white px-3 font-mono text-[11px] tracking-[0.08em] text-[#0F1E33] hover:border-[#C2410C]/60 hover:text-[#C2410C]";
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">My Profile</h1>
-        <p className="text-gray-600">Manage your dietary preferences and health information</p>
-      </div>
+      <PageHead
+        kicker="HOUSE PROFILE"
+        title="Your tastes, locked in."
+        deck="EchoAI plans around all of this — allergies at 0.0 ppm, favourites first."
+        action={
+          <Button onClick={handleSaveProfile} className={cn(folioPrimary, "text-sm")}>
+            Save Changes
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Your account details from Clerk</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <p className="text-lg font-medium">{user?.fullName || "Not set"}</p>
-            </div>
-            <div>
-              <Label>Email</Label>
-              <p className="text-lg font-medium">{user?.primaryEmailAddress?.emailAddress}</p>
-            </div>
-            <div>
-              <Label>Username</Label>
-              <p className="text-lg font-medium">{user?.username || "Not set"}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <FolioCard className="p-6">
+          <h2 className="font-serif text-xl tracking-tight">On the pass</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] text-[#5B6B82]">
+            ACCOUNT DETAILS · VIA CLERK
+          </p>
+          <dl className="mt-5 space-y-4">
+            {[
+              ["Name", user?.fullName || "Not set"],
+              ["Email", user?.primaryEmailAddress?.emailAddress || "Not set"],
+              ["Username", user?.username || "Not set"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-baseline justify-between gap-4 border-b border-[#0F1E33]/8 pb-3">
+                <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                  {k}
+                </dt>
+                <dd className="truncate font-medium">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </FolioCard>
 
         {/* Allergies */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Allergies & Intolerances</CardTitle>
-            <CardDescription>Foods you're allergic to or intolerant of</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 mb-4">
+        <FolioCard className="p-6">
+          <h2 className="font-serif text-xl tracking-tight">Allergen lock</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] text-[#5B6B82]">
+            0.0 PPM · NON-NEGOTIABLE
+          </p>
+          {allergies.length > 0 && (
+            <div className="mb-4 mt-4 flex flex-wrap gap-2">
               {allergies.map((allergy, index) => (
-                <Badge
+                <Stamp
                   key={index}
-                  variant={
-                    allergy.severity === "severe"
-                      ? "destructive"
-                      : allergy.severity === "moderate"
-                      ? "default"
-                      : "secondary"
-                  }
-                  className="gap-1"
+                  tone={allergy.severity === "severe" ? "ember" : allergy.severity === "moderate" ? "ink" : "paper"}
                 >
-                  {allergy.name}
-                  <button onClick={() => handleRemoveAllergy(index)}>
+                  {allergy.name} · {allergy.severity.toUpperCase()}
+                  <button onClick={() => handleRemoveAllergy(index)} aria-label={`Remove ${allergy.name}`}>
                     <X className="h-3 w-3" />
                   </button>
-                </Badge>
+                </Stamp>
               ))}
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label>Add Allergy</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="e.g., Peanuts"
-                  value={newAllergy}
-                  onChange={(e) => setNewAllergy(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddAllergy()}
-                />
-                <select
-                  value={allergySeverity}
-                  onChange={(e) => setAllergySeverity(e.target.value)}
-                  className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          <div className="mt-4 space-y-2">
+            <FieldLabel>Add allergy</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. Peanuts"
+                value={newAllergy}
+                onChange={(e) => setNewAllergy(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddAllergy()}
+                className={inputSkin}
+              />
+              <select
+                value={allergySeverity}
+                onChange={(e) => setAllergySeverity(e.target.value)}
+                className="h-10 shrink-0 rounded-xl border border-[#0F1E33]/20 bg-white px-2 text-sm focus:border-[#C2410C] focus:outline-none"
+                aria-label="Severity"
+              >
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+              </select>
+              <Button onClick={handleAddAllergy} className={cn(folioPrimary, "h-10 w-10 shrink-0 !p-0")} aria-label="Add allergy">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-3">
+            <p className="font-mono text-[10px] tracking-[0.18em] text-[#5B6B82]">QUICK ADD</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {commonAllergies.map((allergy) => (
+                <Button
+                  key={allergy}
+                  variant="outline"
+                  onClick={() => {
+                    if (!allergies.some((a) => a.name === allergy)) {
+                      setAllergies([...allergies, { name: allergy, severity: "moderate" }]);
+                    }
+                  }}
+                  className={quickAddSkin}
                 >
-                  <option value="mild">Mild</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="severe">Severe</option>
-                </select>
-                <Button onClick={handleAddAllergy} size="icon">
-                  <Plus className="h-4 w-4" />
+                  {allergy}
                 </Button>
-              </div>
+              ))}
             </div>
-
-            <div className="pt-2">
-              <Label className="text-xs text-gray-500">Quick add:</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {commonAllergies.map((allergy) => (
-                  <Button
-                    key={allergy}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (!allergies.some((a) => a.name === allergy)) {
-                        setAllergies([...allergies, { name: allergy, severity: "moderate" }]);
-                      }
-                    }}
-                  >
-                    {allergy}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
 
         {/* Medical Conditions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Medical Conditions</CardTitle>
-            <CardDescription>Health conditions affecting your diet</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 mb-4">
+        <FolioCard className="p-6">
+          <h2 className="font-serif text-xl tracking-tight">Health notes</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] text-[#5B6B82]">
+            CONDITIONS ECHOAI COOKS AROUND
+          </p>
+          {medicalConditions.length > 0 && (
+            <div className="mb-4 mt-4 flex flex-wrap gap-2">
               {medicalConditions.map((condition) => (
-                <Badge key={condition} variant="secondary" className="gap-1">
+                <Stamp key={condition} tone="paper">
                   {condition}
-                  <button onClick={() => handleRemoveCondition(condition)}>
+                  <button onClick={() => handleRemoveCondition(condition)} aria-label={`Remove ${condition}`}>
                     <X className="h-3 w-3" />
                   </button>
-                </Badge>
+                </Stamp>
               ))}
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label>Add Condition</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="e.g., Diabetes"
-                  value={newCondition}
-                  onChange={(e) => setNewCondition(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddCondition()}
-                />
-                <Button onClick={handleAddCondition} size="icon">
-                  <Plus className="h-4 w-4" />
+          <div className="mt-4 space-y-2">
+            <FieldLabel>Add condition</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. Diabetes"
+                value={newCondition}
+                onChange={(e) => setNewCondition(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCondition()}
+                className={inputSkin}
+              />
+              <Button onClick={handleAddCondition} className={cn(folioPrimary, "h-10 w-10 shrink-0 !p-0")} aria-label="Add condition">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-3">
+            <p className="font-mono text-[10px] tracking-[0.18em] text-[#5B6B82]">QUICK ADD</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {commonConditions.map((condition) => (
+                <Button
+                  key={condition}
+                  variant="outline"
+                  onClick={() => {
+                    if (!medicalConditions.includes(condition)) {
+                      setMedicalConditions([...medicalConditions, condition]);
+                    }
+                  }}
+                  className={quickAddSkin}
+                >
+                  {condition}
                 </Button>
-              </div>
+              ))}
             </div>
-
-            <div className="pt-2">
-              <Label className="text-xs text-gray-500">Quick add:</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {commonConditions.map((condition) => (
-                  <Button
-                    key={condition}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (!medicalConditions.includes(condition)) {
-                        setMedicalConditions([...medicalConditions, condition]);
-                      }
-                    }}
-                  >
-                    {condition}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
 
         {/* Favorite Ingredients */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Favorite Ingredients</CardTitle>
-            <CardDescription>Ingredients you love in your meals</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 mb-4">
+        <FolioCard className="p-6">
+          <h2 className="font-serif text-xl tracking-tight">House favourites</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] text-[#5B6B82]">
+            FIRST ONTO THE PLAN
+          </p>
+          {favoriteIngredients.length > 0 && (
+            <div className="mb-4 mt-4 flex flex-wrap gap-2">
               {favoriteIngredients.map((ingredient) => (
-                <Badge key={ingredient} variant="secondary" className="gap-1 bg-orange-100 text-orange-800">
+                <Stamp key={ingredient} tone="moss">
                   {ingredient}
-                  <button onClick={() => handleRemoveFavorite(ingredient)}>
+                  <button onClick={() => handleRemoveFavorite(ingredient)} aria-label={`Remove ${ingredient}`}>
                     <X className="h-3 w-3" />
                   </button>
-                </Badge>
+                </Stamp>
               ))}
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label>Add Favorite Ingredient</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="e.g., Chicken, Broccoli"
-                  value={newFavorite}
-                  onChange={(e) => setNewFavorite(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddFavorite()}
-                />
-                <Button onClick={handleAddFavorite} size="icon" className="bg-orange-600">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="mt-4 space-y-2">
+            <FieldLabel>Add favourite</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. Chicken, Broccoli"
+                value={newFavorite}
+                onChange={(e) => setNewFavorite(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddFavorite()}
+                className={inputSkin}
+              />
+              <Button onClick={handleAddFavorite} className={cn(folioPrimary, "h-10 w-10 shrink-0 !p-0")} aria-label="Add favourite">
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FolioCard>
       </div>
 
-      <div className="flex justify-end gap-4">
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Cancel
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={() => window.location.reload()} className={cn(folioOutline, "text-sm")}>
+          Discard
         </Button>
-        <Button onClick={handleSaveProfile} className="bg-orange-600">
+        <Button onClick={handleSaveProfile} className={cn(folioPrimary, "text-sm")}>
           Save Changes
         </Button>
       </div>
