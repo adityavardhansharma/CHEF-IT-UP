@@ -3,11 +3,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +17,19 @@ import { Plus, Search, Trash2, Loader2, X, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Id } from "@/convex/_generated/dataModel";
 import { searchIngredients, createCustomIngredient, getPopularIngredients, initializeSearchCache } from "@/lib/food-api";
-import { APP_BRANDING, UI_TEXT } from "@/lib/branding";
+import { APP_BRANDING } from "@/lib/branding";
 import { cn } from "@/lib/utils";
+import {
+  PageHead,
+  FolioCard,
+  Stamp,
+  EmptyPlate,
+  FieldLabel,
+  folioPrimary,
+} from "@/components/dashboard/folio";
+
+const UNIT_OPTIONS = ["kg", "g", "lb", "oz", "l", "ml", "cup", "tbsp", "tsp", "pieces"];
+const CUSTOM_CATEGORIES = ["Custom", "Vegetables", "Fruits", "Proteins", "Grains", "Dairy", "Spices", "Oils", "Other"];
 
 export default function PantryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,12 +64,12 @@ export default function PantryPage() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    
+
     // Clear previous timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
-    
+
     if (query.length < 2) {
       setApiResults([]);
       setIsSearching(false);
@@ -70,7 +78,7 @@ export default function PantryPage() {
 
     // Show loading immediately
     setIsSearching(true);
-    
+
     // Debounce API call - minimal delay for instant feel
     const timeout = setTimeout(async () => {
       try {
@@ -83,7 +91,7 @@ export default function PantryPage() {
         setIsSearching(false);
       }
     }, 150); // Wait 150ms after user stops typing (instant feel!)
-    
+
     setSearchTimeout(timeout);
   };
 
@@ -105,7 +113,7 @@ export default function PantryPage() {
           category: item.category || "Uncategorized",
           nutritionalInfo: item.nutritionalInfo,
         });
-        
+
         // Now add to user's pantry with the global ID
         await addPantryItem({
           itemId: globalItemId,
@@ -195,351 +203,356 @@ export default function PantryPage() {
   ];
 
   const popularIngredients = getPopularIngredients();
+  const totalCount = pantryItems?.length ?? 0;
+
+  // Note: `searchMode` tracks dialog context for future modes; the custom
+  // creator currently flows through `setSelectedItem` directly.
+  void searchMode;
+  void handleAddCustomIngredient;
+
+  const closeAddForm = () => {
+    setSelectedItem(null);
+    setQuantity("");
+    setCustomIngredientName("");
+  };
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">{APP_BRANDING.pantrySystem.name}</h1>
-          <p className="text-gray-600">{APP_BRANDING.pantrySystem.tagline} - {APP_BRANDING.pantrySystem.description}</p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl h-[85vh] p-0 gap-0 overflow-hidden">
-            <div className="h-full flex flex-col">
-              {/* Floating Search */}
-              <div className="relative z-10 px-6 pt-6 pb-4">
-                <div className="relative max-w-2xl mx-auto">
-                  <div className="absolute inset-0 bg-primary/20 blur-2xl opacity-50" />
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      placeholder="Search ingredients..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="h-14 pl-12 pr-12 text-lg bg-background/95 backdrop-blur-xl border-2 border-border shadow-2xl rounded-2xl"
-                      autoFocus
-                    />
-                    {isSearching && (
-                      <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-primary" />
-                    )}
-                    {!isSearching && searchQuery && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery("");
-                          setApiResults([]);
-                        }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Masonry Grid Results */}
-              <div className="flex-1 overflow-y-auto px-6 pb-6">
-                {!selectedItem ? (
-                <>
-                  {searchQuery.length >= 2 ? (
-                    <div className="space-y-4">
-                      {isSearching ? (
-                        <div className="h-[450px] flex items-center justify-center">
-                          <div className="text-center space-y-4">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                              <Loader2 className="relative h-12 w-12 animate-spin text-primary mx-auto" />
-                            </div>
-                            <div>
-                              <p className="font-medium">Searching...</p>
-                              <p className="text-sm text-muted-foreground mt-1">Finding the best matches</p>
-                            </div>
-                          </div>
-                        </div>
-                      ) : allResults.length > 0 ? (
-                        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-                          {allResults.map((item, index) => (
-                            <div
-                              key={item.id || index}
-                              className="break-inside-avoid"
-                            >
-                              <button
-                                onClick={() => setSelectedItem(item)}
-                                className="w-full p-4 text-left bg-card hover:bg-accent/50 border border-border/40 rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 group"
-                              >
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <h4 className="font-semibold text-sm leading-tight flex-1">
-                                    {item.name}
-                                  </h4>
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                                      <Plus className="h-3.5 w-3.5 text-primary" />
-                                    </div>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground capitalize mb-3">{item.category}</p>
-                                {item.nutritionalInfo && (
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="px-2 py-1 bg-background/50 rounded">
-                                      <span className="font-medium">{item.nutritionalInfo.calories}</span> cal
-                                    </div>
-                                    <div className="px-2 py-1 bg-background/50 rounded">
-                                      <span className="font-medium">{item.nutritionalInfo.protein}g</span> pro
-                                    </div>
-                                  </div>
-                                )}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="h-[450px] flex items-center justify-center">
-                          <div className="text-center space-y-6 max-w-md">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full" />
-                              <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-2xl flex items-center justify-center">
-                                <Search className="h-10 w-10 text-orange-500" />
-                              </div>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-lg mb-2">No results for "{searchQuery}"</p>
-                              <p className="text-sm text-muted-foreground">Try a different search or create your own ingredient</p>
-                            </div>
-                            <Button 
-                              onClick={() => {
-                                setCustomIngredientName(searchQuery);
-                                const customItem = createCustomIngredient(searchQuery, "Custom");
-                                setSelectedItem({ ...customItem, isApiResult: true });
-                              }}
-                              size="lg"
-                              className="gap-2"
-                            >
-                              <Sparkles className="h-4 w-4" />
-                              Create "{searchQuery}"
-                            </Button>
-                          </div>
-                        </div>
+      <PageHead
+        kicker="SMARTPANTRY ENGINE"
+        title={APP_BRANDING.pantrySystem.name}
+        deck={`${APP_BRANDING.pantrySystem.tagline} — ${APP_BRANDING.pantrySystem.description}`}
+        action={
+          <>
+            <Stamp tone={totalCount > 0 ? "moss" : "paper"}>
+              {totalCount} STOCKED
+            </Stamp>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className={cn(folioPrimary, "gap-1.5 text-sm")}>
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[88vh] gap-0 overflow-hidden border-[#0F1E33]/15 bg-[#FAF7F0] p-0 text-[#0F1E33] sm:max-w-3xl">
+                <div className="flex h-full max-h-[88vh] flex-col">
+                  {/* Search */}
+                  <div className="border-b border-[#0F1E33]/10 px-6 pb-4 pt-6">
+                    <DialogHeader className="mb-4 text-left">
+                      <DialogTitle className="font-serif text-2xl tracking-tight">
+                        Stock the shelves
+                      </DialogTitle>
+                      <DialogDescription className="font-light text-[#475569]">
+                        Search the pantry index, or create your own ingredient.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="relative mx-auto max-w-2xl">
+                      <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5B6B82]" />
+                      <Input
+                        placeholder="Search ingredients…"
+                        value={searchQuery}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        className="h-14 rounded-2xl border-[#0F1E33]/20 bg-white py-3.5 pl-12 pr-12 text-base shadow-sm placeholder:text-[#5B6B82]/70 focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30"
+                        autoFocus
+                      />
+                      {isSearching && (
+                        <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-[#C2410C]" />
                       )}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between px-1 mb-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                          <p className="text-sm font-semibold">Popular Ingredients</p>
-                        </div>
+                      {!isSearching && searchQuery && (
                         <button
                           onClick={() => {
-                            const customItem = createCustomIngredient("", "Custom");
-                            setSelectedItem({ ...customItem, isApiResult: true });
+                            setSearchQuery("");
+                            setApiResults([]);
                           }}
-                          className="text-sm text-primary hover:underline flex items-center gap-1.5"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Create custom
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {popularIngredients.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => setSelectedItem({ ...item, isApiResult: true })}
-                            className="group relative p-4 border border-border rounded-xl hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-200 text-left bg-card"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
-                            <div className="relative space-y-1">
-                              <div className="font-medium text-sm truncate">{item.name}</div>
-                              <div className="text-xs text-muted-foreground capitalize truncate">{item.category}</div>
-                              <div className="text-xs text-muted-foreground/70 pt-1">
-                                {item.nutritionalInfo.calories} cal
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                /* Floating Add Form */
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-                  <div className="w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    {/* Header */}
-                    <div className="p-6 border-b border-border/40">
-                      <div className="flex items-start justify-between mb-4">
-                        {selectedItem.id?.startsWith("custom-") ? (
-                          <div className="flex-1 space-y-3">
-                            <Input
-                              placeholder="Ingredient name"
-                              value={customIngredientName || selectedItem.name}
-                              onChange={(e) => {
-                                setCustomIngredientName(e.target.value);
-                                setSelectedItem({ ...selectedItem, name: e.target.value });
-                              }}
-                              className="text-base font-semibold"
-                            />
-                            <select
-                              value={customCategory}
-                              onChange={(e) => {
-                                setCustomCategory(e.target.value);
-                                setSelectedItem({ ...selectedItem, category: e.target.value });
-                              }}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                            >
-                              <option value="Custom">Custom</option>
-                              <option value="Vegetables">Vegetables</option>
-                              <option value="Fruits">Fruits</option>
-                              <option value="Proteins">Proteins</option>
-                              <option value="Grains">Grains</option>
-                              <option value="Dairy">Dairy</option>
-                              <option value="Spices">Spices</option>
-                              <option value="Oils">Oils</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                        ) : (
-                          <div>
-                            <h3 className="text-xl font-semibold mb-1">{selectedItem.name}</h3>
-                            <p className="text-sm text-muted-foreground capitalize">{selectedItem.category}</p>
-                          </div>
-                        )}
-                        <button
-                          onClick={() => {
-                            setSelectedItem(null);
-                            setQuantity("");
-                            setCustomIngredientName("");
-                          }}
-                          className="text-muted-foreground hover:text-foreground ml-3"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5B6B82] hover:text-[#0F1E33]"
+                          aria-label="Clear search"
                         >
                           <X className="h-5 w-5" />
                         </button>
-                      </div>
-                      {selectedItem.nutritionalInfo && !selectedItem.id?.startsWith("custom-") && (
-                        <div className="flex gap-3">
-                          <div className="flex-1 p-3 bg-muted/50 rounded-lg text-center">
-                            <div className="text-2xl font-bold">{selectedItem.nutritionalInfo.calories}</div>
-                            <div className="text-xs text-muted-foreground mt-1">Calories</div>
-                          </div>
-                          <div className="flex-1 p-3 bg-muted/50 rounded-lg text-center">
-                            <div className="text-2xl font-bold">{selectedItem.nutritionalInfo.protein}g</div>
-                            <div className="text-xs text-muted-foreground mt-1">Protein</div>
-                          </div>
-                        </div>
                       )}
                     </div>
+                  </div>
 
-                    {/* Form */}
-                    <div className="p-6 space-y-4">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground mb-2 block">Quantity</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0"
-                            value={quantity}
-                            onChange={(e) => setQuantity(e.target.value)}
-                            className="h-12 text-xl font-semibold text-center"
-                          />
+                  {/* Results */}
+                  <div className="flex-1 overflow-y-auto px-6 py-5">
+                    {!selectedItem ? (
+                      <>
+                        {searchQuery.length >= 2 ? (
+                          <div className="space-y-4">
+                            {isSearching ? (
+                              <div className="flex h-64 items-center justify-center">
+                                <div className="text-center">
+                                  <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#C2410C]" />
+                                  <p className="mt-3 font-serif text-lg">Searching the index…</p>
+                                  <p className="font-mono text-[10px] tracking-[0.2em] text-[#5B6B82]">
+                                    FINDING THE BEST MATCHES
+                                  </p>
+                                </div>
+                              </div>
+                            ) : allResults.length > 0 ? (
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {allResults.map((item, index) => (
+                                  <button
+                                    key={item.id || index}
+                                    onClick={() => setSelectedItem(item)}
+                                    className="group rounded-2xl border border-[#0F1E33]/12 bg-[#FFFDF6] p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#C2410C]/50 hover:shadow-md"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <h4 className="flex-1 font-serif text-base leading-tight tracking-tight">
+                                        {item.name}
+                                      </h4>
+                                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0F1E33]/5 transition-colors group-hover:bg-[#C2410C] group-hover:text-white">
+                                        <Plus className="h-3.5 w-3.5" />
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                                      {item.category}
+                                    </p>
+                                    {item.nutritionalInfo && (
+                                      <div className="mt-2 flex gap-2 font-mono text-[11px] text-[#0F1E33]">
+                                        <span className="rounded-md bg-[#0F1E33]/5 px-2 py-1">
+                                          {item.nutritionalInfo.calories} KCAL
+                                        </span>
+                                        <span className="rounded-md bg-[#0F1E33]/5 px-2 py-1">
+                                          {item.nutritionalInfo.protein}G PRO
+                                        </span>
+                                      </div>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex h-64 items-center justify-center">
+                                <div className="max-w-md text-center">
+                                  <p className="font-serif text-xl">
+                                    No results for &ldquo;{searchQuery}&rdquo;
+                                  </p>
+                                  <p className="mt-1 text-sm font-light text-[#475569]">
+                                    Try a different search or create your own ingredient.
+                                  </p>
+                                  <Button
+                                    onClick={() => {
+                                      setCustomIngredientName(searchQuery);
+                                      const customItem = createCustomIngredient(searchQuery, "Custom");
+                                      setSelectedItem({ ...customItem, isApiResult: true });
+                                    }}
+                                    className={cn(folioPrimary, "mt-5 gap-2")}
+                                  >
+                                    <Sparkles className="h-4 w-4" />
+                                    Create &ldquo;{searchQuery}&rdquo;
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="mb-1 flex items-center justify-between px-1">
+                              <p className="flex items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-[#0F1E33]">
+                                <Sparkles className="h-3.5 w-3.5 text-[#C2410C]" />
+                                POPULAR INGREDIENTS
+                              </p>
+                              <button
+                                onClick={() => {
+                                  const customItem = createCustomIngredient("", "Custom");
+                                  setSelectedItem({ ...customItem, isApiResult: true });
+                                }}
+                                className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.12em] text-[#C2410C] hover:text-[#0F1E33]"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                CREATE CUSTOM
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                              {popularIngredients.map((item) => (
+                                <button
+                                  key={item.id}
+                                  onClick={() => setSelectedItem({ ...item, isApiResult: true })}
+                                  className="group rounded-2xl border border-[#0F1E33]/12 bg-[#FFFDF6] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#C2410C]/50 hover:shadow-md"
+                                >
+                                  <div className="truncate font-medium text-[#0F1E33]">{item.name}</div>
+                                  <div className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-[#5B6B82]">
+                                    {item.category}
+                                  </div>
+                                  <div className="mt-1.5 font-mono text-[11px] text-[#5B6B82]">
+                                    {item.nutritionalInfo.calories} KCAL
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      /* Add form */
+                      <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border border-[#0F1E33]/12 bg-[#FFFDF6] shadow-lg">
+                        <div className="border-b border-[#0F1E33]/10 p-6">
+                          <div className="flex items-start justify-between gap-3">
+                            {selectedItem.id?.startsWith("custom-") ? (
+                              <div className="flex-1 space-y-3">
+                                <div>
+                                  <FieldLabel>Ingredient name</FieldLabel>
+                                  <Input
+                                    placeholder="Ingredient name"
+                                    value={customIngredientName || selectedItem.name}
+                                    onChange={(e) => {
+                                      setCustomIngredientName(e.target.value);
+                                      setSelectedItem({ ...selectedItem, name: e.target.value });
+                                    }}
+                                    className="border-[#0F1E33]/20 bg-white font-medium focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30"
+                                  />
+                                </div>
+                                <div>
+                                  <FieldLabel>Category</FieldLabel>
+                                  <select
+                                    value={customCategory}
+                                    onChange={(e) => {
+                                      setCustomCategory(e.target.value);
+                                      setSelectedItem({ ...selectedItem, category: e.target.value });
+                                    }}
+                                    className="flex h-10 w-full rounded-xl border border-[#0F1E33]/20 bg-white px-3 text-sm focus:border-[#C2410C] focus:outline-none"
+                                  >
+                                    {CUSTOM_CATEGORIES.map((c) => (
+                                      <option key={c} value={c}>{c}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <h3 className="font-serif text-xl tracking-tight">{selectedItem.name}</h3>
+                                <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#5B6B82]">
+                                  {selectedItem.category}
+                                </p>
+                              </div>
+                            )}
+                            <button
+                              onClick={closeAddForm}
+                              className="text-[#5B6B82] hover:text-[#0F1E33]"
+                              aria-label="Back to results"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </div>
+                          {selectedItem.nutritionalInfo && !selectedItem.id?.startsWith("custom-") && (
+                            <div className="mt-4 flex gap-3">
+                              <div className="flex-1 rounded-xl border border-[#0F1E33]/10 bg-[#FAF7F0] p-3 text-center">
+                                <div className="font-serif text-2xl">{selectedItem.nutritionalInfo.calories}</div>
+                                <div className="font-mono text-[10px] tracking-[0.18em] text-[#5B6B82]">
+                                  KCAL
+                                </div>
+                              </div>
+                              <div className="flex-1 rounded-xl border border-[#0F1E33]/10 bg-[#FAF7F0] p-3 text-center">
+                                <div className="font-serif text-2xl">{selectedItem.nutritionalInfo.protein}g</div>
+                                <div className="font-mono text-[10px] tracking-[0.18em] text-[#5B6B82]">
+                                  PROTEIN
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div className="w-32">
-                          <Label className="text-xs text-muted-foreground mb-2 block">Unit</Label>
-                          <select
-                            value={unit}
-                            onChange={(e) => setUnit(e.target.value)}
-                            className="flex h-12 w-full rounded-md border border-input bg-background px-3 text-sm font-medium"
+
+                        <div className="space-y-4 p-6">
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <FieldLabel>Quantity</FieldLabel>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0"
+                                value={quantity}
+                                onChange={(e) => setQuantity(e.target.value)}
+                                className="h-12 border-[#0F1E33]/20 bg-white text-center font-serif text-xl focus-visible:border-[#C2410C] focus-visible:ring-[#C2410C]/30"
+                              />
+                            </div>
+                            <div className="w-32">
+                              <FieldLabel>Unit</FieldLabel>
+                              <select
+                                value={unit}
+                                onChange={(e) => setUnit(e.target.value)}
+                                className="flex h-12 w-full rounded-xl border border-[#0F1E33]/20 bg-white px-3 text-sm font-medium focus:border-[#C2410C] focus:outline-none"
+                              >
+                                {UNIT_OPTIONS.map((u) => (
+                                  <option key={u} value={u}>{u}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <Button
+                            onClick={() => handleAddItem(selectedItem)}
+                            className={cn(folioPrimary, "h-12 w-full gap-2 text-base")}
                           >
-                            <option value="kg">kg</option>
-                            <option value="g">g</option>
-                            <option value="lb">lb</option>
-                            <option value="oz">oz</option>
-                            <option value="l">l</option>
-                            <option value="ml">ml</option>
-                            <option value="cup">cup</option>
-                            <option value="tbsp">tbsp</option>
-                            <option value="tsp">tsp</option>
-                            <option value="pieces">pcs</option>
-                          </select>
+                            <Plus className="h-5 w-5" />
+                            Add to Pantry
+                          </Button>
                         </div>
                       </div>
-
-                      <Button 
-                        onClick={() => handleAddItem(selectedItem)} 
-                        className="w-full h-12 text-base"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add to Pantry
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       {pantryItems && pantryItems.length > 0 ? (
         <div className="space-y-6">
           {Object.entries(groupedItems || {}).map(([category, items]: [string, any]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle>{category}</CardTitle>
-                <CardDescription>{items.length} items</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {items.map((item: any) => (
-                    <div
-                      key={item._id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{item.name || item.customItemName}</h3>
-                        <p className="text-sm text-gray-600">
-                          {(() => {
-                            const q = item.quantity;
-                            const u = item.unit.toLowerCase();
-                            const isPreciseUnit = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'tsp', 'tbsp', 'cup'].includes(u);
-                            return isPreciseUnit ? Number(q).toFixed(3) : q;
-                          })()} {item.unit}
-                        </p>
+            <FolioCard key={category}>
+              <div className="flex items-center justify-between gap-2 border-b border-[#0F1E33]/10 px-6 py-4">
+                <h2 className="font-serif text-xl tracking-tight">{category}</h2>
+                <Stamp tone="paper">{items.length} ITEMS</Stamp>
+              </div>
+              <ul className="grid grid-cols-1 divide-y divide-[#0F1E33]/8 md:grid-cols-2 md:divide-y-0 lg:grid-cols-3">
+                {items.map((item: any) => (
+                  <li
+                    key={item._id}
+                    className="flex items-center justify-between gap-3 px-6 py-3.5 transition-colors hover:bg-white/60 md:border-b md:border-[#0F1E33]/8"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-[#0F1E33]">
+                        {item.name || item.customItemName}
+                      </p>
+                      <p className="font-mono text-[11px] text-[#5B6B82]">
+                        {(() => {
+                          const q = item.quantity;
+                          const u = item.unit.toLowerCase();
+                          const isPreciseUnit = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'tsp', 'tbsp', 'cup'].includes(u);
+                          return isPreciseUnit ? Number(q).toFixed(3) : q;
+                        })()} {item.unit.toUpperCase()}
                         {item.nutritionalInfo && (
-                          <p className="text-xs text-gray-500">
-                            {item.nutritionalInfo.calories} cal/100g
-                          </p>
+                          <span> · {item.nutritionalInfo.calories} KCAL/100G</span>
                         )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteItem(item._id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <button
+                      onClick={() => handleDeleteItem(item._id)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#5B6B82] transition-colors hover:bg-[#C2410C]/10 hover:text-[#C2410C]"
+                      aria-label={`Remove ${item.name || item.customItemName}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </FolioCard>
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-gray-500 mb-4">Your pantry is empty</p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>Add Your First Item</Button>
-          </CardContent>
-        </Card>
+        <EmptyPlate
+          kicker="EMPTY SHELVES"
+          title="The pantry is bare."
+          body="Stock your first ingredients and EchoAI will start planning from them."
+        >
+          <Button onClick={() => setIsAddDialogOpen(true)} className={cn(folioPrimary, "text-sm")}>
+            Add Your First Item
+          </Button>
+        </EmptyPlate>
       )}
+
     </div>
   );
 }
